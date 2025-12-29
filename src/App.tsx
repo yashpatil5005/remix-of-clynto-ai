@@ -25,6 +25,13 @@ import OrchestratorNewPage from "./pages/workflow/OrchestratorNewPage";
 import OrchestratorAIPage from "./pages/workflow/OrchestratorAIPage";
 import CSMFeedPage from "./pages/workflow/CSMFeedPage";
 
+// Account Canvas Pages
+import AllAccountsPage from "./pages/accounts/AllAccountsPage";
+import HealthPage from "./pages/accounts/HealthPage";
+import RevenueForecastPage from "./pages/accounts/RevenueForecastPage";
+import MeetingsRecordingsPage from "./pages/accounts/MeetingsRecordingsPage";
+import TicketsPage from "./pages/accounts/TicketsPage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -57,6 +64,13 @@ const App = () => (
             <Route path="/workflow/orchestrator-new" element={<AppLayout><OrchestratorNewPage /></AppLayout>} />
             <Route path="/workflow/orchestrator-ai" element={<AppLayout><OrchestratorAIPage /></AppLayout>} />
             <Route path="/workflow/csm-feed" element={<AppLayout><CSMFeedPage /></AppLayout>} />
+            
+            {/* Account Canvas Module */}
+            <Route path="/accounts/all" element={<AppLayout><AllAccountsPage /></AppLayout>} />
+            <Route path="/accounts/health" element={<AppLayout><HealthPage /></AppLayout>} />
+            <Route path="/accounts/revenue" element={<AppLayout><RevenueForecastPage /></AppLayout>} />
+            <Route path="/accounts/meetings" element={<AppLayout><MeetingsRecordingsPage /></AppLayout>} />
+            <Route path="/accounts/tickets" element={<AppLayout><TicketsPage /></AppLayout>} />
             
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
