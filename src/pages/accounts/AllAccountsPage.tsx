@@ -404,12 +404,12 @@ export default function AllAccountsPage() {
         <div className="bg-card/60 border border-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <div className="min-w-[1300px]">
-              <div className="grid grid-cols-[1.5fr_100px_100px_120px_80px_100px_120px] gap-4 px-6 py-3 bg-muted/30 border-b border-border text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+              <div className="grid grid-cols-7 gap-6 px-6 py-3 bg-muted/30 border-b border-border text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                 <span>Account</span>
                 <span>Stage</span>
                 <span>Health Score</span>
-                <span className="text-right">ARR</span>
-                <span className="text-right">Renewal</span>
+                <span>ARR</span>
+                <span>Renewal</span>
                 <span>Status</span>
                 <span>CSM</span>
               </div>
@@ -418,7 +418,7 @@ export default function AllAccountsPage() {
                   <button
                     key={account.id}
                     onClick={() => setSelectedAccount(account)}
-                    className="w-full grid grid-cols-[1.5fr_100px_100px_120px_80px_100px_120px] gap-4 px-6 py-4 hover:bg-muted/20 transition-all duration-200 text-left group"
+                    className="w-full grid grid-cols-7 gap-6 px-6 py-4 hover:bg-muted/20 transition-all duration-200 text-left group"
                   >
                     {/* Account Name with Logo */}
                     <div className="flex items-center gap-3">
@@ -450,10 +450,10 @@ export default function AllAccountsPage() {
                     </div>
 
                     {/* ARR */}
-                    <span className="text-right font-medium text-foreground">{formatCurrency(account.arr)}</span>
+                    <span className="font-medium text-foreground">{formatCurrency(account.arr)}</span>
                     
                     {/* Renewal */}
-                    <span className={cn('text-right text-sm', account.renewalDays <= 30 ? 'text-destructive font-medium' : 'text-muted-foreground')}>
+                    <span className={cn('text-sm', account.renewalDays <= 30 ? 'text-destructive font-medium' : 'text-muted-foreground')}>
                       {account.renewalDays}d
                     </span>
 
