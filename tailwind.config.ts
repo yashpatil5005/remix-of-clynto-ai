@@ -64,6 +64,12 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        "count-purple": "hsl(var(--count-purple))",
+        stage: {
+          onboarding: "hsl(var(--stage-onboarding))",
+          adoption: "hsl(var(--stage-adoption))",
+          renewal: "hsl(var(--stage-renewal))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
