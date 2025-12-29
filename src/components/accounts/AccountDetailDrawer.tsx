@@ -15,7 +15,7 @@ import {
   Folder
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogOverlay } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -52,15 +52,6 @@ interface AccountDetailDrawerProps {
   open: boolean;
   onClose: () => void;
 }
-
-const overviewChartData = [
-  { month: 'Sep', value: 5 },
-  { month: 'Oct', value: 12 },
-  { month: 'Nov', value: 8 },
-  { month: 'Dec', value: 18 },
-  { month: 'Jan', value: 15 },
-  { month: 'Feb', value: 22 },
-];
 
 const engagementChartData = [
   { month: 'Sep', value: 50 },
@@ -116,18 +107,9 @@ export function AccountDetailDrawer({ account, open, onClose }: AccountDetailDra
     }
   };
 
-  const getHealthColor = (health: string) => {
-    switch (health) {
-      case 'Healthy': return 'text-accent';
-      case 'At Risk': return 'text-warning';
-      case 'Critical': return 'text-destructive';
-      default: return 'text-muted-foreground';
-    }
-  };
-
   return (
-    <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-[80vw] sm:max-w-none p-0 border-l border-border bg-background">
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[90vh] p-0 border border-border bg-background overflow-hidden">
         {/* Fixed Header */}
         <div className="sticky top-0 z-10 bg-card border-b border-border">
           <div className="flex items-center justify-between px-6 py-4">
@@ -200,52 +182,15 @@ export function AccountDetailDrawer({ account, open, onClose }: AccountDetailDra
           </Tabs>
         </div>
 
-        <ScrollArea className="h-[calc(100vh-140px)]">
+        <ScrollArea className="h-[calc(90vh-160px)]">
           <div className="p-6 space-y-6">
             {/* Overview Tab */}
             {activeTab === 'overview' && (
               <>
-                {/* Chart Section */}
-                <div className="bg-card border border-border rounded-xl p-5">
-                  <div className="h-48">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={overviewChartData}>
-                        <XAxis 
-                          dataKey="month" 
-                          axisLine={false} 
-                          tickLine={false}
-                          tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                        />
-                        <YAxis 
-                          axisLine={false} 
-                          tickLine={false}
-                          tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                          domain={[0, 25]}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'hsl(var(--card))', 
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: '8px',
-                            fontSize: '12px'
-                          }}
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="value" 
-                          stroke="hsl(var(--primary))" 
-                          strokeWidth={2}
-                          dot={{ r: 4, fill: 'hsl(var(--primary))' }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                {/* Account Details */}
+                {/* Account Details - Single Column */}
                 <div className="space-y-4">
                   <h3 className="text-base font-semibold text-foreground">Account Details</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-0">
                     <DetailRow label="Industry" value={account.industry} />
                     <DetailRow label="Segment" value={account.size} />
                     <DetailRow label="Region" value={account.region} />
@@ -253,6 +198,7 @@ export function AccountDetailDrawer({ account, open, onClose }: AccountDetailDra
                     <DetailRow label="Renewal Date" value={formatDate(account.renewalDate)} />
                     <DetailRow label="Active Users" value="0 / 0" />
                     <DetailRow label="Primary Contact" value="Sarah John" />
+                    <DetailRow label="Plan" value={account.plan} />
                   </div>
                 </div>
 
@@ -322,11 +268,6 @@ export function AccountDetailDrawer({ account, open, onClose }: AccountDetailDra
                     </div>
                   </div>
                 </div>
-
-                {/* CTA Button */}
-                <Button className="w-full" size="lg">
-                  View Full Account Details
-                </Button>
               </>
             )}
 
@@ -364,11 +305,6 @@ export function AccountDetailDrawer({ account, open, onClose }: AccountDetailDra
                     ))}
                   </div>
                 </div>
-
-                {/* CTA Button */}
-                <Button className="w-full" size="lg">
-                  View Full Account Details
-                </Button>
               </>
             )}
 
@@ -389,11 +325,6 @@ export function AccountDetailDrawer({ account, open, onClose }: AccountDetailDra
                     ))}
                   </div>
                 </div>
-
-                {/* CTA Button */}
-                <Button className="w-full" size="lg">
-                  View Full Account Details
-                </Button>
               </>
             )}
 
@@ -428,7 +359,7 @@ export function AccountDetailDrawer({ account, open, onClose }: AccountDetailDra
                 {/* Primary Contact */}
                 <div className="space-y-4">
                   <h3 className="text-base font-semibold text-foreground">Primary Contact</h3>
-                  <div className="space-y-3">
+                  <div className="space-y-0">
                     <DetailRow label="Name" value="Sarah John" />
                     <DetailRow label="Role" value="CTO" />
                     <DetailRow 
@@ -442,24 +373,19 @@ export function AccountDetailDrawer({ account, open, onClose }: AccountDetailDra
                     <DetailRow label="Phone" value="N/A" />
                   </div>
                 </div>
-
-                {/* CTA Button */}
-                <Button className="w-full" size="lg">
-                  View Full Account Details
-                </Button>
               </>
             )}
           </div>
         </ScrollArea>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-border/50 last:border-b-0">
-      <span className="text-xs text-muted-foreground">{label}</span>
+    <div className="flex items-center justify-between py-3 border-b border-border/50 last:border-b-0">
+      <span className="text-sm text-muted-foreground">{label}</span>
       <span className="text-sm font-medium text-foreground">{value}</span>
     </div>
   );

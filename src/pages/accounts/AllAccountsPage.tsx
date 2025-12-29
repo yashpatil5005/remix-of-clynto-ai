@@ -295,6 +295,15 @@ export default function AllAccountsPage() {
     }
   };
 
+  const getStageBadgeClass = (stage: string) => {
+    switch (stage) {
+      case 'Onboarding': return 'bg-stage-onboarding/10 text-stage-onboarding';
+      case 'Adoption': return 'bg-stage-adoption/10 text-stage-adoption';
+      case 'Renewal': return 'bg-stage-renewal/10 text-stage-renewal';
+      default: return 'bg-muted text-muted-foreground';
+    }
+  };
+
   const getNPSColor = (nps: number) => {
     if (nps >= 50) return 'text-accent';
     if (nps >= 0) return 'text-warning';
@@ -332,7 +341,7 @@ export default function AllAccountsPage() {
           <div className="flex items-center gap-12">
             <div>
               <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Total Accounts</p>
-              <p className="text-2xl font-bold text-foreground">{totalAccounts}</p>
+              <p className="text-2xl font-bold text-count-purple">{totalAccounts}</p>
             </div>
             <div className="h-10 w-px bg-border" />
             <div className="flex items-center gap-6">
@@ -394,9 +403,10 @@ export default function AllAccountsPage() {
         {/* Journey View Table */}
         <div className="bg-card/60 border border-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <div className="min-w-[1200px]">
-              <div className="grid grid-cols-[1fr_120px_140px_100px_100px_140px] gap-4 px-6 py-3 bg-muted/30 border-b border-border text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+            <div className="min-w-[1300px]">
+              <div className="grid grid-cols-[1.5fr_100px_100px_120px_80px_100px_120px] gap-4 px-6 py-3 bg-muted/30 border-b border-border text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                 <span>Account</span>
+                <span>Stage</span>
                 <span>Health Score</span>
                 <span className="text-right">ARR</span>
                 <span className="text-right">Renewal</span>
@@ -408,7 +418,7 @@ export default function AllAccountsPage() {
                   <button
                     key={account.id}
                     onClick={() => setSelectedAccount(account)}
-                    className="w-full grid grid-cols-[1fr_120px_140px_100px_100px_140px] gap-4 px-6 py-4 hover:bg-muted/20 transition-all duration-200 text-left group"
+                    className="w-full grid grid-cols-[1.5fr_100px_100px_120px_80px_100px_120px] gap-4 px-6 py-4 hover:bg-muted/20 transition-all duration-200 text-left group"
                   >
                     {/* Account Name with Logo */}
                     <div className="flex items-center gap-3">
@@ -420,11 +430,18 @@ export default function AllAccountsPage() {
                       </Avatar>
                       <span className="font-medium text-foreground group-hover:text-primary transition-colors">{account.name}</span>
                     </div>
+
+                    {/* Stage */}
+                    <div className="flex items-center">
+                      <span className={cn('text-xs px-2.5 py-1 rounded-full font-medium', getStageBadgeClass(account.stage))}>
+                        {account.stage}
+                      </span>
+                    </div>
                     
                     {/* Health Score with Bar */}
                     <div className="flex items-center gap-2">
                       <span className={cn('font-semibold text-sm', getHealthColor(account.health))}>{account.healthScore}</span>
-                      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden max-w-[60px]">
+                      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden max-w-[40px]">
                         <div 
                           className={cn('h-full rounded-full transition-all', getHealthBarColor(account.healthScore))}
                           style={{ width: `${account.healthScore}%` }}
