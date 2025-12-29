@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MessageSquare, GitBranch, ChevronDown, ChevronRight, Sparkles, Users, Activity, Zap, Building2, Heart, DollarSign, Video, Ticket, Settings, User, Link2, Key, Sliders, Database, Workflow } from 'lucide-react';
+import { MessageSquare, GitBranch, ChevronDown, ChevronRight, Sparkles, Users, Activity, Zap, Building2, Heart, DollarSign, Video, Ticket, Settings, User, Link2, Key, Sliders, Database, Workflow, PanelLeftClose, PanelLeft } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -52,7 +53,7 @@ const propertiesSubItems = [
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const collapsed = state === 'collapsed';
   
   const isWorkflowActive = workflowSubItems.some(item => location.pathname === item.url);
@@ -440,6 +441,26 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      
+      {/* Collapse Button at Bottom */}
+      <SidebarFooter className="p-3 border-t border-sidebar-border">
+        <button
+          onClick={toggleSidebar}
+          className={cn(
+            'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 hover:bg-sidebar-accent text-sidebar-foreground/70 hover:text-sidebar-foreground',
+            collapsed && 'justify-center px-0'
+          )}
+        >
+          {collapsed ? (
+            <PanelLeft className="w-4 h-4" />
+          ) : (
+            <>
+              <PanelLeftClose className="w-4 h-4" />
+              <span className="text-sm font-medium">Collapse</span>
+            </>
+          )}
+        </button>
+      </SidebarFooter>
     </Sidebar>
   );
 }
