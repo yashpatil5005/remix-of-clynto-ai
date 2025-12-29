@@ -4,24 +4,18 @@ import {
   ChevronRight, 
   TrendingUp, 
   TrendingDown, 
-  X,
   ArrowRight,
   Building2,
   Lightbulb,
   AlertTriangle,
-  User,
   Smile,
   Meh,
   Frown,
-  Globe,
-  Briefcase,
-  CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AccountDetailDrawer } from '@/components/accounts/AccountDetailDrawer';
 
 const journeyStages = ['Onboarding', 'Adoption', 'Renewal'];
 
@@ -558,205 +552,12 @@ export default function AllAccountsPage() {
         </div>
       </div>
 
-      {/* Account Detail Sheet */}
-      <Sheet open={!!selectedAccount} onOpenChange={() => setSelectedAccount(null)}>
-        <SheetContent className="w-[80vw] sm:max-w-none p-0 border-l border-border bg-background">
-          <SheetHeader className="px-8 py-6 border-b border-border bg-gradient-to-r from-card/80 to-card/40">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-14 w-14 border-2 border-border shadow-lg">
-                  <AvatarImage src={selectedAccount?.logo} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
-                    {selectedAccount?.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <SheetTitle className="text-xl font-semibold text-foreground">{selectedAccount?.name}</SheetTitle>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className={cn('text-xs px-2.5 py-1 rounded-full border font-medium', getStatusBadgeClass(selectedAccount?.status || ''))}>
-                      {selectedAccount?.status}
-                    </span>
-                    <span className={cn('text-xs px-2.5 py-1 rounded-full font-medium', getPlanBadgeClass(selectedAccount?.plan || ''))}>
-                      {selectedAccount?.plan}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => setSelectedAccount(null)} className="hover:bg-muted">
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-          </SheetHeader>
-          
-          <ScrollArea className="h-[calc(100vh-120px)]">
-            <div className="px-8 py-6 space-y-8">
-              {/* Primary Metrics Grid */}
-              <div className="grid grid-cols-4 gap-4">
-                {/* Health Score */}
-                <div className="bg-gradient-to-br from-card to-card/60 border border-border rounded-xl p-5 shadow-sm">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-2">Health Score</p>
-                  <div className="flex items-end gap-3">
-                    <p className={cn('text-3xl font-bold', getHealthColor(selectedAccount?.health || ''))}>{selectedAccount?.healthScore}</p>
-                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden mb-1.5">
-                      <div 
-                        className={cn('h-full rounded-full transition-all', getHealthBarColor(selectedAccount?.healthScore || 0))}
-                        style={{ width: `${selectedAccount?.healthScore}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* ARR */}
-                <div className="bg-gradient-to-br from-card to-card/60 border border-border rounded-xl p-5 shadow-sm">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-2">ARR</p>
-                  <p className="text-3xl font-bold text-primary">{formatCurrency(selectedAccount?.arr || 0)}</p>
-                </div>
-
-                {/* Renewal Date */}
-                <div className="bg-gradient-to-br from-card to-card/60 border border-border rounded-xl p-5 shadow-sm">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-2">Renewal Date</p>
-                  <p className="text-lg font-semibold text-foreground">{formatDate(selectedAccount?.renewalDate || '')}</p>
-                  <p className={cn('text-sm', (selectedAccount?.renewalDays || 0) <= 30 ? 'text-destructive' : 'text-muted-foreground')}>
-                    {selectedAccount?.renewalDays} days remaining
-                  </p>
-                </div>
-
-                {/* Manager / CSM */}
-                <div className="bg-gradient-to-br from-card to-card/60 border border-border rounded-xl p-5 shadow-sm">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium mb-2">Assigned CSM</p>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 border border-border">
-                      <AvatarImage src={selectedAccount?.csm.avatar} />
-                      <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
-                        {selectedAccount?.csm.name.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium text-foreground">{selectedAccount?.csm.name}</p>
-                      <p className="text-xs text-muted-foreground">{selectedAccount?.csm.email}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Secondary Metrics */}
-              <div className="grid grid-cols-3 gap-4">
-                {/* CSAT */}
-                <div className="bg-card/60 border border-border rounded-xl p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">CSAT Score</p>
-                    <Smile className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-bold text-foreground">{selectedAccount?.csat.toFixed(1)}</span>
-                    <span className="text-muted-foreground text-sm">/ 5.0</span>
-                  </div>
-                  <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-accent rounded-full transition-all"
-                      style={{ width: `${((selectedAccount?.csat || 0) / 5) * 100}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* NPS */}
-                <div className="bg-card/60 border border-border rounded-xl p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">NPS</p>
-                    <TrendingUp className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className={cn('text-2xl font-bold', getNPSColor(selectedAccount?.nps || 0))}>{selectedAccount?.nps}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {(selectedAccount?.nps || 0) >= 50 ? 'Promoter' : (selectedAccount?.nps || 0) >= 0 ? 'Passive' : 'Detractor'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Sentiment */}
-                <div className="bg-card/60 border border-border rounded-xl p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Sentiment</p>
-                    {getSentimentIcon(selectedAccount?.sentiment || '')}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={cn(
-                      'text-lg font-semibold',
-                      selectedAccount?.sentiment === 'Positive' ? 'text-accent' :
-                      selectedAccount?.sentiment === 'Negative' ? 'text-destructive' : 'text-warning'
-                    )}>
-                      {selectedAccount?.sentiment}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">AI-driven tone analysis</p>
-                </div>
-              </div>
-
-              {/* Account Details */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Account Details</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  {/* Industry */}
-                  <div className="bg-card/60 border border-border rounded-xl p-5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Briefcase className="w-4 h-4 text-muted-foreground" />
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Industry</p>
-                    </div>
-                    <p className="text-lg font-semibold text-foreground">{selectedAccount?.industry}</p>
-                  </div>
-
-                  {/* Region */}
-                  <div className="bg-card/60 border border-border rounded-xl p-5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Globe className="w-4 h-4 text-muted-foreground" />
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Region</p>
-                    </div>
-                    <p className="text-lg font-semibold text-foreground">{selectedAccount?.region}</p>
-                  </div>
-
-                  {/* Plan */}
-                  <div className="bg-card/60 border border-border rounded-xl p-5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CreditCard className="w-4 h-4 text-muted-foreground" />
-                      <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Plan</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-lg font-semibold text-foreground">{selectedAccount?.plan}</p>
-                      <span className={cn('text-xs px-2 py-0.5 rounded-full', getPlanBadgeClass(selectedAccount?.plan || ''))}>
-                        Active
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Information */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Contact Information</h3>
-                <div className="bg-card/60 border border-border rounded-xl p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">Primary Contact</p>
-                      <p className="text-sm text-muted-foreground">Contact details would be displayed here</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recent Activity */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider">Recent Activity</h3>
-                <div className="bg-card/60 border border-border rounded-xl p-6">
-                  <p className="text-muted-foreground">Timeline of account activities and interactions would appear here.</p>
-                </div>
-              </div>
-            </div>
-          </ScrollArea>
-        </SheetContent>
-      </Sheet>
+      {/* Account Detail Drawer */}
+      <AccountDetailDrawer 
+        account={selectedAccount}
+        open={!!selectedAccount}
+        onClose={() => setSelectedAccount(null)}
+      />
     </div>
   );
 }
