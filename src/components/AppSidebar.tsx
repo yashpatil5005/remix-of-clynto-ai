@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MessageSquare, GitBranch, ChevronDown, ChevronRight, Sparkles, Users, Activity, Zap } from 'lucide-react';
+import { MessageSquare, GitBranch, ChevronDown, ChevronRight, Sparkles, Users, Activity, Zap, Building2, Heart, DollarSign, Video, Ticket } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -25,6 +25,14 @@ const workflowSubItems = [
   { title: 'CSM Feed', url: '/workflow/csm-feed', icon: Users },
 ];
 
+const accountCanvasSubItems = [
+  { title: 'All Accounts', url: '/accounts/all', icon: Building2 },
+  { title: 'Health', url: '/accounts/health', icon: Heart },
+  { title: 'Revenue & Forecast', url: '/accounts/revenue', icon: DollarSign },
+  { title: 'Meetings & Recordings', url: '/accounts/meetings', icon: Video },
+  { title: 'Tickets', url: '/accounts/tickets', icon: Ticket },
+];
+
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -32,7 +40,9 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   
   const isWorkflowActive = workflowSubItems.some(item => location.pathname === item.url);
+  const isAccountCanvasActive = accountCanvasSubItems.some(item => location.pathname === item.url);
   const [workflowOpen, setWorkflowOpen] = useState(isWorkflowActive);
+  const [accountCanvasOpen, setAccountCanvasOpen] = useState(isAccountCanvasActive);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -135,6 +145,75 @@ export function AppSidebar() {
                     <CollapsibleContent className="animate-accordion-down">
                       <SidebarMenuSub className="ml-6 mt-1 border-l border-sidebar-border pl-3 space-y-1">
                         {workflowSubItems.map((item) => (
+                          <SidebarMenuSubItem key={item.url}>
+                            <SidebarMenuSubButton
+                              onClick={() => navigate(item.url)}
+                              className={cn(
+                                'group flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-200 text-sm',
+                                isActive(item.url)
+                                  ? 'bg-primary/10 text-primary font-medium'
+                                  : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent'
+                              )}
+                            >
+                              <item.icon className={cn(
+                                'w-3.5 h-3.5 transition-colors',
+                                isActive(item.url) ? 'text-primary' : 'text-sidebar-foreground/50 group-hover:text-primary'
+                              )} />
+                              <span>{item.title}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  )}
+                </SidebarMenuItem>
+              </Collapsible>
+
+              {/* Account Canvas Dropdown */}
+              <Collapsible
+                open={accountCanvasOpen}
+                onOpenChange={setAccountCanvasOpen}
+                className="group/collapsible"
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton
+                      tooltip="Account Canvas"
+                      className={cn(
+                        'group flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                        isAccountCanvasActive 
+                          ? 'bg-primary/10 text-primary border border-primary/20' 
+                          : 'hover:bg-sidebar-accent text-sidebar-foreground'
+                      )}
+                    >
+                      <div className={cn(
+                        'w-8 h-8 rounded-lg flex items-center justify-center transition-colors',
+                        isAccountCanvasActive 
+                          ? 'bg-primary/20' 
+                          : 'bg-sidebar-accent group-hover:bg-primary/10'
+                      )}>
+                        <Building2 className={cn(
+                          'w-4 h-4 transition-colors',
+                          isAccountCanvasActive ? 'text-primary' : 'text-sidebar-foreground/70 group-hover:text-primary'
+                        )} />
+                      </div>
+                      {!collapsed && (
+                        <>
+                          <span className="flex-1 font-medium">Account Canvas</span>
+                          {accountCanvasOpen ? (
+                            <ChevronDown className="w-4 h-4 text-sidebar-foreground/50 transition-transform duration-200" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4 text-sidebar-foreground/50 transition-transform duration-200" />
+                          )}
+                        </>
+                      )}
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  
+                  {!collapsed && (
+                    <CollapsibleContent className="animate-accordion-down">
+                      <SidebarMenuSub className="ml-6 mt-1 border-l border-sidebar-border pl-3 space-y-1">
+                        {accountCanvasSubItems.map((item) => (
                           <SidebarMenuSubItem key={item.url}>
                             <SidebarMenuSubButton
                               onClick={() => navigate(item.url)}
