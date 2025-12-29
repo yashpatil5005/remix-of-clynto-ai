@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
+import { AppLayout } from "./components/AppLayout";
 
 // Pages
 import AuthPage from "./pages/AuthPage";
@@ -65,29 +66,29 @@ const App = () => (
             <Route path="/permissions" element={<PermissionsPage />} />
             <Route path="/welcome" element={<WelcomePage />} />
             
-            {/* Main App */}
-            <Route path="/home" element={<HomePage />} />
+            {/* Main App with Sidebar */}
+            <Route path="/home" element={<AppLayout><HomePage /></AppLayout>} />
             
             {/* Workflow Module */}
-            <Route path="/workflow/orchestrator-new" element={<OrchestratorNewPage />} />
-            <Route path="/workflow/orchestrator-ai" element={<OrchestratorAIPage />} />
-            <Route path="/workflow/csm-feed" element={<CSMFeedPage />} />
+            <Route path="/workflow/orchestrator-new" element={<AppLayout><OrchestratorNewPage /></AppLayout>} />
+            <Route path="/workflow/orchestrator-ai" element={<AppLayout><OrchestratorAIPage /></AppLayout>} />
+            <Route path="/workflow/csm-feed" element={<AppLayout><CSMFeedPage /></AppLayout>} />
             
             {/* Account Canvas Module */}
-            <Route path="/accounts/all" element={<AllAccountsPage />} />
-            <Route path="/accounts/health" element={<HealthPage />} />
-            <Route path="/accounts/revenue" element={<RevenueForecastPage />} />
-            <Route path="/accounts/meetings" element={<MeetingsRecordingsPage />} />
-            <Route path="/accounts/tickets" element={<TicketsPage />} />
+            <Route path="/accounts/all" element={<AppLayout><AllAccountsPage /></AppLayout>} />
+            <Route path="/accounts/health" element={<AppLayout><HealthPage /></AppLayout>} />
+            <Route path="/accounts/revenue" element={<AppLayout><RevenueForecastPage /></AppLayout>} />
+            <Route path="/accounts/meetings" element={<AppLayout><MeetingsRecordingsPage /></AppLayout>} />
+            <Route path="/accounts/tickets" element={<AppLayout><TicketsPage /></AppLayout>} />
             
             {/* Settings Module */}
-            <Route path="/settings/profile" element={<ProfilePage />} />
-            <Route path="/settings/users" element={<UserManagementPage />} />
-            <Route path="/settings/integrations" element={<IntegrationsPage />} />
-            <Route path="/settings/api-keys" element={<ApiKeysPage />} />
-            <Route path="/settings/health-score" element={<HealthScoreBuilderPage />} />
-            <Route path="/settings/data-modeler" element={<DataModelerPage />} />
-            <Route path="/settings/workflow-automation" element={<WorkflowAutomationPage />} />
+            <Route path="/settings/profile" element={<AppLayout><ProfilePage /></AppLayout>} />
+            <Route path="/settings/users" element={<AppLayout><UserManagementPage /></AppLayout>} />
+            <Route path="/settings/integrations" element={<AppLayout><IntegrationsPage /></AppLayout>} />
+            <Route path="/settings/api-keys" element={<AppLayout><ApiKeysPage /></AppLayout>} />
+            <Route path="/settings/health-score" element={<AppLayout><HealthScoreBuilderPage /></AppLayout>} />
+            <Route path="/settings/data-modeler" element={<AppLayout><DataModelerPage /></AppLayout>} />
+            <Route path="/settings/workflow-automation" element={<AppLayout><WorkflowAutomationPage /></AppLayout>} />
             
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
