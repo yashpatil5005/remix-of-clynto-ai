@@ -19,6 +19,11 @@ import WelcomePage from "./pages/WelcomePage";
 import HomePage from "./pages/HomePage";
 import NotFound from "./pages/NotFound";
 
+// Workflow Pages
+import OrchestratorNewPage from "./pages/workflow/OrchestratorNewPage";
+import OrchestratorAIPage from "./pages/workflow/OrchestratorAIPage";
+import CSMFeedPage from "./pages/workflow/CSMFeedPage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -46,6 +51,11 @@ const App = () => (
             
             {/* Main App */}
             <Route path="/home" element={<HomePage />} />
+            
+            {/* Workflow Module */}
+            <Route path="/workflow/orchestrator-new" element={<OrchestratorNewPage />} />
+            <Route path="/workflow/orchestrator-ai" element={<OrchestratorAIPage />} />
+            <Route path="/workflow/csm-feed" element={<CSMFeedPage />} />
             
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
