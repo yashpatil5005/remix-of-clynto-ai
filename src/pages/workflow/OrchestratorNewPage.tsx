@@ -21,7 +21,6 @@ import {
   CheckCircle2,
   Loader2
 } from 'lucide-react';
-import WorkflowLayout from '@/components/workflow/WorkflowLayout';
 import { cn } from '@/lib/utils';
 
 interface AccountField {
@@ -69,8 +68,7 @@ const OrchestratorNewPage: React.FC = () => {
   };
 
   return (
-    <WorkflowLayout>
-      <div className="min-h-[calc(100vh-4rem)] bg-background">
+    <div className="min-h-screen bg-background overflow-y-auto">
         {/* Page Header */}
         <div className="border-b border-border/40 bg-card/30">
           <div className="max-w-[1400px] mx-auto px-6 py-8">
@@ -357,8 +355,7 @@ const OrchestratorNewPage: React.FC = () => {
             </>
           )}
         </div>
-      </div>
-    </WorkflowLayout>
+    </div>
   );
 };
 

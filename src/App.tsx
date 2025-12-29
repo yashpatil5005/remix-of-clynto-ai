@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
+import { AppLayout } from "./components/AppLayout";
 
 // Pages
 import AuthPage from "./pages/AuthPage";
@@ -49,13 +50,13 @@ const App = () => (
             <Route path="/permissions" element={<PermissionsPage />} />
             <Route path="/welcome" element={<WelcomePage />} />
             
-            {/* Main App */}
-            <Route path="/home" element={<HomePage />} />
+            {/* Main App with Sidebar */}
+            <Route path="/home" element={<AppLayout><HomePage /></AppLayout>} />
             
             {/* Workflow Module */}
-            <Route path="/workflow/orchestrator-new" element={<OrchestratorNewPage />} />
-            <Route path="/workflow/orchestrator-ai" element={<OrchestratorAIPage />} />
-            <Route path="/workflow/csm-feed" element={<CSMFeedPage />} />
+            <Route path="/workflow/orchestrator-new" element={<AppLayout><OrchestratorNewPage /></AppLayout>} />
+            <Route path="/workflow/orchestrator-ai" element={<AppLayout><OrchestratorAIPage /></AppLayout>} />
+            <Route path="/workflow/csm-feed" element={<AppLayout><CSMFeedPage /></AppLayout>} />
             
             {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
