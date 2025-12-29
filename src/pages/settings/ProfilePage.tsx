@@ -68,7 +68,7 @@ export default function ProfilePage() {
   return (
     <AppLayout>
       <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
-        <div className="max-w-4xl mx-auto p-8">
+        <div className="p-8">
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl font-semibold text-foreground tracking-tight">Profile</h1>

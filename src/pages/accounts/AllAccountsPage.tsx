@@ -404,7 +404,7 @@ export default function AllAccountsPage() {
         <div className="bg-card/60 border border-border rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <div className="min-w-[1300px]">
-              <div className="grid grid-cols-7 gap-6 px-6 py-3 bg-muted/30 border-b border-border text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+              <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-8 px-6 py-3 bg-muted/30 border-b border-border text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                 <span>Account</span>
                 <span>Stage</span>
                 <span>Health Score</span>
@@ -418,7 +418,7 @@ export default function AllAccountsPage() {
                   <button
                     key={account.id}
                     onClick={() => setSelectedAccount(account)}
-                    className="w-full grid grid-cols-7 gap-6 px-6 py-4 hover:bg-muted/20 transition-all duration-200 text-left group"
+                    className="w-full grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-8 px-6 py-4 hover:bg-muted/20 transition-all duration-200 text-left group"
                   >
                     {/* Account Name with Logo */}
                     <div className="flex items-center gap-3">
