@@ -1,32 +1,20 @@
 import React, { useState } from 'react';
 import { 
   Plus,
-  ChevronRight,
   ChevronDown,
   Clock,
   CheckCircle2,
   Pause,
-  AlertTriangle,
-  TrendingDown,
-  TrendingUp,
-  Calendar,
   Zap,
-  Building2,
   Activity,
-  X,
-  Edit3,
-  Trash2,
-  GripVertical,
-  ArrowRight,
   RefreshCw,
   FileText,
   Settings,
-  MoreHorizontal,
   Check,
-  Circle,
-  ChevronUp
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import WorkflowVisualizationPanel from '@/components/workflow/WorkflowVisualizationPanel';
 
 interface SubTask {
   id: string;
@@ -79,8 +67,6 @@ const OrchestratorAIPage: React.FC = () => {
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [workflowPanelOpen, setWorkflowPanelOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<WorkflowTask | null>(null);
-  const [expandedPhases, setExpandedPhases] = useState<string[]>(['preparation', 'kickoff']);
-  const [expandedWorkflowTasks, setExpandedWorkflowTasks] = useState<string[]>([]);
 
   const instanceFilters = [
     { id: 'all', label: 'All Instances', count: 47 },
@@ -374,21 +360,6 @@ const OrchestratorAIPage: React.FC = () => {
     setWorkflowPanelOpen(true);
   };
 
-  const togglePhase = (phaseId: string) => {
-    setExpandedPhases(prev => 
-      prev.includes(phaseId) 
-        ? prev.filter(id => id !== phaseId)
-        : [...prev, phaseId]
-    );
-  };
-
-  const toggleWorkflowTask = (taskId: string) => {
-    setExpandedWorkflowTasks(prev => 
-      prev.includes(taskId) 
-        ? prev.filter(id => id !== taskId)
-        : [...prev, taskId]
-    );
-  };
 
   return (
     <div className="min-h-screen bg-background overflow-y-auto">
@@ -674,309 +645,15 @@ const OrchestratorAIPage: React.FC = () => {
       </div>
 
       {/* Workflow Visualization Panel */}
-      {workflowPanelOpen && selectedAccount && (
-        <>
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40 transition-opacity"
-            onClick={() => setWorkflowPanelOpen(false)}
-          />
-          
-          {/* Panel */}
-          <div className="fixed top-0 right-0 w-[80%] h-full bg-background border-l border-border shadow-2xl z-50 overflow-hidden flex flex-col animate-slide-up">
-            {/* Panel Header */}
-            <div className="border-b border-border/60 bg-card/50 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold">{selectedAccount.account}</h2>
-                    <p className="text-sm text-muted-foreground">{selectedAccount.playbook} · {selectedAccount.journeyPhase}</p>
-                  </div>
-                </div>
-
-                {/* Panel Actions */}
-                <div className="flex items-center gap-2">
-                  <button className="px-3 py-1.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                  <button className="px-4 py-2 rounded-lg text-sm font-medium border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
-                    Replace Playbook
-                  </button>
-                  <button className="px-4 py-2 rounded-lg text-sm font-medium border border-border/60 text-muted-foreground hover:text-foreground hover:bg-secondary transition-all">
-                    Detach Workflow
-                  </button>
-                  <button className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all">
-                    Save Changes
-                  </button>
-                  <button 
-                    onClick={() => setWorkflowPanelOpen(false)}
-                    className="p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-all ml-2"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Trust Indicators */}
-              <div className="flex items-center gap-6 mt-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-accent" />
-                  12 data auto-updates applied
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  5 attributes pending update
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" />
-                  2 system actions queued
-                </span>
-              </div>
-            </div>
-
-            {/* Workflow Timeline */}
-            <div className="flex-1 overflow-y-auto px-6 py-6">
-              {/* Timeline Header */}
-              <div className="flex items-center gap-2 mb-6">
-                <div className="flex-1 h-px bg-border" />
-                <span className="text-xs text-muted-foreground uppercase tracking-wider px-2">Workflow Timeline</span>
-                <div className="flex-1 h-px bg-border" />
-              </div>
-
-              {/* Phases */}
-              <div className="space-y-4">
-                {sampleWorkflowPhases.map((phase, phaseIndex) => {
-                  const isPhaseExpanded = expandedPhases.includes(phase.id);
-                  const completedTasks = phase.tasks.filter(t => t.completed).length;
-                  const totalTasks = phase.tasks.length;
-                  const phaseProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-
-                  return (
-                    <div key={phase.id} className="relative">
-                      {/* Phase Header */}
-                      <button
-                        onClick={() => togglePhase(phase.id)}
-                        className={cn(
-                          "w-full flex items-center gap-4 p-4 rounded-lg border transition-all text-left",
-                          isPhaseExpanded 
-                            ? "bg-card border-border/60" 
-                            : "bg-card/50 border-border/40 hover:bg-card/80 hover:border-border/60"
-                        )}
-                      >
-                        {/* Phase Icon */}
-                        <div className={cn(
-                          "w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-sm font-semibold",
-                          phaseProgress === 100 
-                            ? "bg-accent/15 text-accent" 
-                            : phaseProgress > 0 
-                            ? "bg-primary/15 text-primary"
-                            : "bg-secondary text-muted-foreground"
-                        )}>
-                          {phaseProgress === 100 ? <Check className="w-5 h-5" /> : phaseIndex + 1}
-                        </div>
-
-                        {/* Phase Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3">
-                            <h3 className="font-medium">{phase.name}</h3>
-                            <span className="text-xs text-muted-foreground bg-secondary/60 px-2 py-0.5 rounded">
-                              {phase.timeline}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 mt-1">
-                            <span className="text-sm text-muted-foreground">
-                              {completedTasks} of {totalTasks} tasks
-                            </span>
-                            {/* Mini Progress */}
-                            <div className="w-24 h-1.5 bg-secondary rounded-full overflow-hidden">
-                              <div 
-                                className={cn(
-                                  "h-full rounded-full transition-all",
-                                  phaseProgress === 100 ? "bg-accent" : "bg-primary"
-                                )}
-                                style={{ width: `${phaseProgress}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Expand Icon */}
-                        <ChevronDown className={cn(
-                          "w-5 h-5 text-muted-foreground transition-transform",
-                          isPhaseExpanded && "rotate-180"
-                        )} />
-                      </button>
-
-                      {/* Phase Tasks */}
-                      {isPhaseExpanded && (
-                        <div className="mt-2 ml-5 pl-9 border-l-2 border-border/40 space-y-2">
-                          {phase.tasks.map((task) => {
-                            const isTaskExpanded = expandedWorkflowTasks.includes(task.id);
-                            const completedSubtasks = task.subTasks.filter(st => st.completed).length;
-
-                            return (
-                              <div key={task.id} className="relative">
-                                {/* Connection Dot */}
-                                <div className="absolute -left-[21px] top-4 w-2.5 h-2.5 rounded-full bg-background border-2 border-border" />
-                                
-                                {/* Task Card */}
-                                <div className={cn(
-                                  "rounded-lg border transition-all",
-                                  task.completed 
-                                    ? "bg-accent/5 border-accent/20" 
-                                    : "bg-card/60 border-border/40"
-                                )}>
-                                  <div 
-                                    className="flex items-center gap-3 p-3 cursor-pointer"
-                                    onClick={() => toggleWorkflowTask(task.id)}
-                                  >
-                                    {/* Task Status */}
-                                    <div className={cn(
-                                      "w-6 h-6 rounded-md flex items-center justify-center shrink-0",
-                                      task.completed 
-                                        ? "bg-accent/20 text-accent" 
-                                        : "bg-secondary text-muted-foreground"
-                                    )}>
-                                      {task.completed ? <Check className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />}
-                                    </div>
-
-                                    {/* Task Info */}
-                                    <div className="flex-1 min-w-0">
-                                      <h4 className={cn(
-                                        "font-medium text-sm",
-                                        task.completed && "text-muted-foreground"
-                                      )}>
-                                        {task.name}
-                                      </h4>
-                                      {task.subTasks.length > 0 && (
-                                        <span className="text-xs text-muted-foreground">
-                                          {completedSubtasks} of {task.subTasks.length} sub-tasks
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    {/* Task Actions */}
-                                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <button className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
-                                        <Edit3 className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-all">
-                                        <Plus className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all">
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                      <button className="p-1.5 rounded hover:bg-secondary text-muted-foreground cursor-grab">
-                                        <GripVertical className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-
-                                    <ChevronRight className={cn(
-                                      "w-4 h-4 text-muted-foreground transition-transform",
-                                      isTaskExpanded && "rotate-90"
-                                    )} />
-                                  </div>
-
-                                  {/* Task Details */}
-                                  {isTaskExpanded && (
-                                    <div className="px-3 pb-3 pt-0 border-t border-border/40 mt-0">
-                                      <div className="pt-3 space-y-4">
-                                        {/* Task Meta */}
-                                        <div className="grid grid-cols-2 gap-4 text-sm">
-                                          <div>
-                                            <span className="text-xs text-muted-foreground uppercase tracking-wider">Description</span>
-                                            <p className="mt-1">{task.description}</p>
-                                          </div>
-                                          <div>
-                                            <span className="text-xs text-muted-foreground uppercase tracking-wider">End Goal</span>
-                                            <p className="mt-1">{task.endGoal}</p>
-                                          </div>
-                                        </div>
-
-                                        {/* Attributes */}
-                                        <div>
-                                          <span className="text-xs text-muted-foreground uppercase tracking-wider">Attributes to Update</span>
-                                          <div className="flex flex-wrap gap-1.5 mt-2">
-                                            {task.attributesToUpdate.map((attr, i) => (
-                                              <span key={i} className="text-xs bg-secondary/80 text-foreground px-2 py-1 rounded">
-                                                {attr}
-                                              </span>
-                                            ))}
-                                          </div>
-                                        </div>
-
-                                        {/* Expectations */}
-                                        <div>
-                                          <span className="text-xs text-muted-foreground uppercase tracking-wider">System Behavior</span>
-                                          <p className="text-sm mt-1 text-muted-foreground">{task.expectations}</p>
-                                        </div>
-
-                                        {/* Sub-tasks */}
-                                        {task.subTasks.length > 0 && (
-                                          <div>
-                                            <span className="text-xs text-muted-foreground uppercase tracking-wider">Sub-tasks</span>
-                                            <div className="mt-2 space-y-1.5">
-                                              {task.subTasks.map((subTask) => (
-                                                <div 
-                                                  key={subTask.id}
-                                                  className="flex items-center gap-2 text-sm"
-                                                >
-                                                  <div className={cn(
-                                                    "w-4 h-4 rounded flex items-center justify-center",
-                                                    subTask.completed 
-                                                      ? "bg-accent/20 text-accent" 
-                                                      : "bg-secondary border border-border/60"
-                                                  )}>
-                                                    {subTask.completed && <Check className="w-2.5 h-2.5" />}
-                                                  </div>
-                                                  <span className={subTask.completed ? "text-muted-foreground line-through" : ""}>
-                                                    {subTask.name}
-                                                  </span>
-                                                  {subTask.attributeUpdate && (
-                                                    <span className="text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded ml-auto">
-                                                      {subTask.attributeUpdate}
-                                                    </span>
-                                                  )}
-                                                </div>
-                                              ))}
-                                            </div>
-                                          </div>
-                                        )}
-
-                                        {/* Task Actions */}
-                                        <div className="flex items-center gap-2 pt-2">
-                                          <button className="text-xs text-primary hover:underline">+ Add Sub-task</button>
-                                          <span className="text-muted-foreground">·</span>
-                                          <button className="text-xs text-muted-foreground hover:text-foreground">Skip Task</button>
-                                          <span className="text-muted-foreground">·</span>
-                                          <button className="text-xs text-muted-foreground hover:text-foreground">Pause</button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-
-                          {/* Add Task to Phase */}
-                          <button className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground py-2 pl-3 transition-colors">
-                            <Plus className="w-3.5 h-3.5" />
-                            Add task to {phase.name}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+      <WorkflowVisualizationPanel
+        isOpen={workflowPanelOpen}
+        onClose={() => setWorkflowPanelOpen(false)}
+        accountName={selectedAccount?.account || ''}
+        playbookName={selectedAccount?.playbook || 'Customer Onboarding Playbook'}
+        currentPhase={selectedAccount?.journeyPhase || ''}
+        workflowData={{ phases: [] }}
+        status="active"
+      />
     </div>
   );
 };
