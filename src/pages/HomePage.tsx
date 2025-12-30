@@ -193,23 +193,39 @@ const HomePage: React.FC = () => {
         {!hasConversation && (
           <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
             <div className="max-w-2xl w-full space-y-8 animate-fade-in">
-              {/* Hero Header */}
-              <div className="text-center space-y-4">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/5 border border-primary/20 text-primary text-sm font-medium mb-4">
-                  <Zap className="w-4 h-4" />
-                  AI-Powered Customer Intelligence
+              {/* Larry Avatar & Greeting */}
+              <div className="flex flex-col items-center text-center space-y-6">
+                {/* Larry Avatar */}
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary via-primary/80 to-accent flex items-center justify-center shadow-2xl shadow-primary/30 ring-4 ring-primary/10">
+                    <Sparkles className="w-10 h-10 text-primary-foreground" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-green-500 border-4 border-background flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                  </div>
                 </div>
-                <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
-                  Chat with Larry
-                </h1>
-                <p className="text-lg text-muted-foreground font-light max-w-md mx-auto leading-relaxed">
-                  Your AI-powered customer success assistant
-                </p>
+
+                {/* Larry's Greeting */}
+                <div className="space-y-3">
+                  <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+                    Hey! I'm Larry 👋
+                  </h1>
+                  <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
+                    Your AI-powered customer success partner. I can help you analyze accounts, track renewals, identify risks, and get things done on your behalf.
+                  </p>
+                </div>
+
+                {/* Larry's Question */}
+                <div className="bg-card/80 border border-border/50 rounded-2xl px-6 py-4 shadow-lg shadow-black/5 max-w-lg">
+                  <p className="text-base text-foreground font-medium">
+                    What would you like me to help you with today?
+                  </p>
+                </div>
               </div>
 
-              {/* Quick Queries */}
+              {/* Quick Actions */}
               <div className="space-y-3">
-                <p className="text-xs text-muted-foreground text-center font-medium uppercase tracking-wider">Quick queries</p>
+                <p className="text-xs text-muted-foreground text-center font-medium uppercase tracking-wider">Quick actions I can take</p>
                 <div className="grid grid-cols-2 gap-3">
                   {examplePrompts.map((prompt, idx) => (
                     <button
@@ -241,7 +257,7 @@ const HomePage: React.FC = () => {
                     onKeyDown={handleKeyDown}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
-                    placeholder="Ask Larry about accounts, renewals, risk, usage, or tasks..."
+                    placeholder="Tell me what you need help with..."
                     rows={1}
                     className="w-full resize-none bg-card border border-border/60 rounded-2xl px-6 py-5 pr-16 text-base text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all shadow-lg shadow-black/5"
                     style={{ minHeight: '64px', maxHeight: '160px' }}
