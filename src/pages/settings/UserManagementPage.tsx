@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,8 +19,7 @@ export default function UserManagementPage() {
   const [editingUser, setEditingUser] = useState<typeof users[0] | null>(null);
 
   return (
-    <AppLayout>
-      <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
         <div className="p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -165,6 +163,6 @@ export default function UserManagementPage() {
           )}
         </SheetContent>
       </Sheet>
-    </AppLayout>
+    </div>
   );
 }
