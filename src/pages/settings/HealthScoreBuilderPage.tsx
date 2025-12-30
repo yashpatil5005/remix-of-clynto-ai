@@ -113,7 +113,6 @@ export default function HealthScoreBuilderPage() {
               {totalWeight}%
             </span>
           </div>
-        </div>
       </div>
     </div>
   );
