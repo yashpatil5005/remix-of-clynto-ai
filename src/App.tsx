@@ -23,8 +23,6 @@ import NotFound from "./pages/NotFound";
 // Workflow Pages
 import OrchestratorNewPage from "./pages/workflow/OrchestratorNewPage";
 import OrchestratorAIPage from "./pages/workflow/OrchestratorAIPage";
-import OrchestratorAwaitingPage from "./pages/workflow/OrchestratorAwaitingPage";
-import OrchestratorActivePage from "./pages/workflow/OrchestratorActivePage";
 import CSMFeedPage from "./pages/workflow/CSMFeedPage";
 
 // Account Canvas Pages
@@ -74,8 +72,6 @@ const App = () => (
             {/* Workflow Module */}
             <Route path="/workflow/orchestrator-new" element={<AppLayout><OrchestratorNewPage /></AppLayout>} />
             <Route path="/workflow/orchestrator-ai" element={<AppLayout><OrchestratorAIPage /></AppLayout>} />
-            <Route path="/workflow/orchestrator-awaiting" element={<AppLayout><OrchestratorAwaitingPage /></AppLayout>} />
-            <Route path="/workflow/orchestrator-active" element={<AppLayout><OrchestratorActivePage /></AppLayout>} />
             <Route path="/workflow/csm-feed" element={<AppLayout><CSMFeedPage /></AppLayout>} />
             
             {/* Account Canvas Module */}
