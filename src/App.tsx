@@ -31,6 +31,7 @@ import HealthPage from "./pages/accounts/HealthPage";
 import RevenueForecastPage from "./pages/accounts/RevenueForecastPage";
 import MeetingsRecordingsPage from "./pages/accounts/MeetingsRecordingsPage";
 import TicketsPage from "./pages/accounts/TicketsPage";
+import TasksPage from "./pages/accounts/TasksPage";
 
 // Settings Pages
 import ProfilePage from "./pages/settings/ProfilePage";
@@ -80,6 +81,7 @@ const App = () => (
             <Route path="/accounts/revenue" element={<AppLayout><RevenueForecastPage /></AppLayout>} />
             <Route path="/accounts/meetings" element={<AppLayout><MeetingsRecordingsPage /></AppLayout>} />
             <Route path="/accounts/tickets" element={<AppLayout><TicketsPage /></AppLayout>} />
+            <Route path="/accounts/tasks" element={<AppLayout><TasksPage /></AppLayout>} />
             
             {/* Settings Module */}
             <Route path="/settings/profile" element={<AppLayout><ProfilePage /></AppLayout>} />
