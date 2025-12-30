@@ -80,6 +80,7 @@ interface AwaitingAccount {
 }
 
 const OrchestratorAIPage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'awaiting' | 'active'>('awaiting');
   const [activeFilter, setActiveFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
@@ -342,25 +343,56 @@ const OrchestratorAIPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="px-6 py-6 space-y-8">
-        {/* Section 1: Accounts Awaiting Activation */}
-        {awaitingAccounts.length > 0 && (
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-warning/15 flex items-center justify-center">
-                  <Clock className="w-4 h-4 text-warning" />
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold">Accounts Awaiting Activation</h2>
-                  <p className="text-xs text-muted-foreground">Accounts without assigned playbooks</p>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-warning/15 text-warning tabular-nums">
-                  {awaitingAccounts.length} pending
-                </span>
-              </div>
-            </div>
+      {/* Tab Navigation */}
+      <div className="px-6 pt-4 border-b border-border/40">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setActiveTab('awaiting')}
+            className={cn(
+              "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all -mb-px",
+              activeTab === 'awaiting'
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+            )}
+          >
+            <Clock className="w-4 h-4" />
+            Accounts Awaiting Activation
+            <span className={cn(
+              "px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums",
+              activeTab === 'awaiting'
+                ? "bg-primary/15 text-primary"
+                : "bg-secondary text-muted-foreground"
+            )}>
+              {awaitingAccounts.length}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('active')}
+            className={cn(
+              "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all -mb-px",
+              activeTab === 'active'
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+            )}
+          >
+            <Layers className="w-4 h-4" />
+            Active Workflow Execution
+            <span className={cn(
+              "px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums",
+              activeTab === 'active'
+                ? "bg-primary/15 text-primary"
+                : "bg-secondary text-muted-foreground"
+            )}>
+              {tasks.length}
+            </span>
+          </button>
+        </div>
+      </div>
 
+      <div className="px-6 py-6 space-y-6">
+        {/* Tab Content: Accounts Awaiting Activation */}
+        {activeTab === 'awaiting' && (
+          <section className="space-y-4">
             {/* Awaiting Accounts Table */}
             <div className="rounded-xl border border-border/60 overflow-hidden bg-card/30">
               {/* Header */}
@@ -434,173 +466,165 @@ const OrchestratorAIPage: React.FC = () => {
           </section>
         )}
 
-        {/* Section 2: Active Workflow Execution */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
-              <Layers className="w-4 h-4 text-accent" />
+        {/* Tab Content: Active Workflow Execution */}
+        {activeTab === 'active' && (
+          <section className="space-y-4">
+            {/* Filters */}
+            <div className="flex items-center justify-between gap-4">
+              {/* Instance Filters */}
+              <div className="flex items-center gap-1.5">
+                {instanceFilters.map((filter) => (
+                  <button
+                    key={filter.id}
+                    onClick={() => setActiveFilter(filter.id)}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                      activeFilter === filter.id
+                        ? "bg-foreground text-background shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                    )}
+                  >
+                    {filter.label}
+                    <span className={cn(
+                      "px-1.5 py-0.5 rounded text-xs tabular-nums",
+                      activeFilter === filter.id
+                        ? "bg-background/20 text-background"
+                        : "bg-secondary text-muted-foreground"
+                    )}>
+                      {filter.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div>
-              <h2 className="text-base font-semibold">Active Workflow Execution</h2>
-              <p className="text-xs text-muted-foreground">Live task stream across all accounts</p>
-            </div>
-          </div>
 
-          {/* Filters */}
-          <div className="flex items-center justify-between gap-4">
-            {/* Instance Filters */}
-            <div className="flex items-center gap-1.5">
-              {instanceFilters.map((filter) => (
+            {/* Status Filters */}
+            <div className="flex items-center gap-1 pb-4 border-b border-border/40">
+              {statusFilters.map((filter) => (
                 <button
                   key={filter.id}
-                  onClick={() => setActiveFilter(filter.id)}
+                  onClick={() => setStatusFilter(filter.id)}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-                    activeFilter === filter.id
-                      ? "bg-foreground text-background shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                    "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all",
+                    statusFilter === filter.id
+                      ? "bg-secondary text-foreground font-medium"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                   )}
                 >
+                  {filter.id === 'pending' && <Clock className="w-3.5 h-3.5" />}
+                  {filter.id === 'completed' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                  {filter.id === 'suspended' && <Pause className="w-3.5 h-3.5" />}
                   {filter.label}
-                  <span className={cn(
-                    "px-1.5 py-0.5 rounded text-xs tabular-nums",
-                    activeFilter === filter.id
-                      ? "bg-background/20 text-background"
-                      : "bg-secondary text-muted-foreground"
-                  )}>
-                    {filter.count}
-                  </span>
+                  <span className="text-xs text-muted-foreground tabular-nums">({filter.count})</span>
                 </button>
               ))}
             </div>
-          </div>
 
-          {/* Status Filters */}
-          <div className="flex items-center gap-1 pb-4 border-b border-border/40">
-            {statusFilters.map((filter) => (
-              <button
-                key={filter.id}
-                onClick={() => setStatusFilter(filter.id)}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all",
-                  statusFilter === filter.id
-                    ? "bg-secondary text-foreground font-medium"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                )}
-              >
-                {filter.id === 'pending' && <Clock className="w-3.5 h-3.5" />}
-                {filter.id === 'completed' && <CheckCircle2 className="w-3.5 h-3.5" />}
-                {filter.id === 'suspended' && <Pause className="w-3.5 h-3.5" />}
-                {filter.label}
-                <span className="text-xs text-muted-foreground tabular-nums">({filter.count})</span>
-              </button>
-            ))}
-          </div>
+            {/* Task Stream */}
+            <div className="space-y-1.5">
+              {filteredTasks.map((task) => {
+                const TriggerIcon = getTriggerIcon(task.trigger.type);
+                const StatusIcon = getStatusIcon(task.status);
+                const isExpanded = expandedTask === task.id;
 
-          {/* Task Stream */}
-          <div className="space-y-1.5">
-            {filteredTasks.map((task) => {
-              const TriggerIcon = getTriggerIcon(task.trigger.type);
-              const StatusIcon = getStatusIcon(task.status);
-              const isExpanded = expandedTask === task.id;
-
-              return (
-                <div 
-                  key={task.id}
-                  className={cn(
-                    "group rounded-xl border transition-all duration-200",
-                    task.status === 'suspended' 
-                      ? "border-border/30 bg-muted/30 opacity-80" 
-                      : task.status === 'completed'
-                      ? "border-accent/20 bg-accent/5"
-                      : "border-border/40 bg-card/40 hover:bg-card/70 hover:border-border/60"
-                  )}
-                >
-                  {/* Task Row */}
+                return (
                   <div 
-                    className="flex items-center gap-4 px-4 py-3.5 cursor-pointer"
-                    onClick={() => setExpandedTask(isExpanded ? null : task.id)}
+                    key={task.id}
+                    className={cn(
+                      "group rounded-xl border transition-all duration-200",
+                      task.status === 'suspended' 
+                        ? "border-border/30 bg-muted/30 opacity-80" 
+                        : task.status === 'completed'
+                        ? "border-accent/20 bg-accent/5"
+                        : "border-border/40 bg-card/40 hover:bg-card/70 hover:border-border/60"
+                    )}
                   >
-                    {/* Status Icon */}
-                    <div className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                      task.status === 'completed' ? "bg-accent/15 text-accent" :
-                      task.status === 'suspended' ? "bg-muted text-muted-foreground" :
-                      task.priority === 'high' ? "bg-warning/15 text-warning" :
-                      "bg-secondary text-muted-foreground"
-                    )}>
-                      <StatusIcon className="w-4 h-4" />
-                    </div>
-
-                    {/* Account */}
-                    <div className="w-44 shrink-0">
-                      <p className="text-sm font-medium truncate">{task.account}</p>
-                      <p className="text-xs text-muted-foreground">{task.journeyPhase}</p>
-                    </div>
-
-                    {/* Task */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-foreground truncate">{task.currentTask}</p>
-                    </div>
-
-                    {/* Trigger */}
-                    <div className={cn(
-                      "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border shrink-0",
-                      getTriggerColor(task.trigger.type)
-                    )}>
-                      <TriggerIcon className="w-3.5 h-3.5" />
-                      {task.trigger.label}
-                    </div>
-
-                    {/* Due */}
-                    <div className={cn(
-                      "flex items-center gap-1.5 text-xs shrink-0 w-24",
-                      getDueColor(task.dueContext)
-                    )}>
-                      <Calendar className="w-3.5 h-3.5" />
-                      {task.dueContext === 'today' ? 'Today' : 
-                       task.dueContext === 'overdue' ? task.dueDate : 
-                       task.dueDate}
-                    </div>
-
-                    {/* Expand */}
-                    <ChevronDown className={cn(
-                      "w-4 h-4 text-muted-foreground transition-transform",
-                      isExpanded && "rotate-180"
-                    )} />
-                  </div>
-
-                  {/* Expanded Details */}
-                  {isExpanded && (
-                    <div className="px-4 pb-4 pt-0 space-y-3 border-t border-border/30 mt-0">
-                      <div className="flex items-center gap-3 pt-3">
-                        {task.playbook && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openWorkflowPanel(task);
-                            }}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-border/60 text-foreground hover:bg-secondary/60 transition-all"
-                          >
-                            <Settings2 className="w-4 h-4" />
-                            View Playbook
-                            <ArrowUpRight className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all">
-                          Mark Complete
-                        </button>
-                        <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all">
-                          Defer
-                        </button>
+                    {/* Task Row */}
+                    <div 
+                      className="flex items-center gap-4 px-4 py-3.5 cursor-pointer"
+                      onClick={() => setExpandedTask(isExpanded ? null : task.id)}
+                    >
+                      {/* Status Icon */}
+                      <div className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
+                        task.status === 'completed' ? "bg-accent/15 text-accent" :
+                        task.status === 'suspended' ? "bg-muted text-muted-foreground" :
+                        task.priority === 'high' ? "bg-warning/15 text-warning" :
+                        "bg-secondary text-muted-foreground"
+                      )}>
+                        <StatusIcon className="w-4 h-4" />
                       </div>
+
+                      {/* Account */}
+                      <div className="w-44 shrink-0">
+                        <p className="text-sm font-medium truncate">{task.account}</p>
+                        <p className="text-xs text-muted-foreground">{task.journeyPhase}</p>
+                      </div>
+
+                      {/* Task */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground truncate">{task.currentTask}</p>
+                      </div>
+
+                      {/* Trigger */}
+                      <div className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border shrink-0",
+                        getTriggerColor(task.trigger.type)
+                      )}>
+                        <TriggerIcon className="w-3.5 h-3.5" />
+                        {task.trigger.label}
+                      </div>
+
+                      {/* Due */}
+                      <div className={cn(
+                        "flex items-center gap-1.5 text-xs shrink-0 w-24",
+                        getDueColor(task.dueContext)
+                      )}>
+                        <Calendar className="w-3.5 h-3.5" />
+                        {task.dueContext === 'today' ? 'Today' : 
+                         task.dueContext === 'overdue' ? task.dueDate : 
+                         task.dueDate}
+                      </div>
+
+                      {/* Expand */}
+                      <ChevronDown className={cn(
+                        "w-4 h-4 text-muted-foreground transition-transform",
+                        isExpanded && "rotate-180"
+                      )} />
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
+
+                    {/* Expanded Details */}
+                    {isExpanded && (
+                      <div className="px-4 pb-4 pt-0 space-y-3 border-t border-border/30 mt-0">
+                        <div className="flex items-center gap-3 pt-3">
+                          {task.playbook && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openWorkflowPanel(task);
+                              }}
+                              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-border/60 text-foreground hover:bg-secondary/60 transition-all"
+                            >
+                              <Settings2 className="w-4 h-4" />
+                              View Playbook
+                              <ArrowUpRight className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all">
+                            Mark Complete
+                          </button>
+                          <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all">
+                            Defer
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Section 3: Larry's System Awareness */}
         <section className="max-w-2xl">
