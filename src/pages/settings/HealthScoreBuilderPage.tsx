@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -34,8 +33,7 @@ export default function HealthScoreBuilderPage() {
   };
 
   return (
-    <AppLayout>
-      <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
         <div className="p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -117,6 +115,6 @@ export default function HealthScoreBuilderPage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+    </div>
   );
 }

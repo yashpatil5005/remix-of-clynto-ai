@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Check, Settings, AlertCircle, ChevronDown, ChevronRight, Database, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -121,8 +120,7 @@ export default function IntegrationsPage() {
   };
 
   return (
-    <AppLayout>
-      <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
         <div className="p-8">
           {/* Header */}
           <div className="mb-8">
@@ -224,6 +222,6 @@ export default function IntegrationsPage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+    </div>
   );
 }

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,8 +65,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <AppLayout>
-      <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
         <div className="p-8">
           {/* Header */}
           <div className="mb-8">
@@ -105,6 +103,6 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-    </AppLayout>
+    </div>
   );
 }

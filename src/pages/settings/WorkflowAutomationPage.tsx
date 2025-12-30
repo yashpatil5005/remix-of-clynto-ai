@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -73,8 +72,7 @@ export default function WorkflowAutomationPage() {
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
-    <AppLayout>
-      <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
         <div className="p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -193,6 +191,6 @@ export default function WorkflowAutomationPage() {
           </div>
         </SheetContent>
       </Sheet>
-    </AppLayout>
+    </div>
   );
 }

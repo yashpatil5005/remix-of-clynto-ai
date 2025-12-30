@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -457,8 +456,7 @@ const TasksPage = () => {
   };
 
   return (
-    <AppLayout>
-      <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex-1 overflow-auto">
         {/* Header */}
         <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-10">
           <div className="px-8 py-6">
@@ -751,7 +749,7 @@ const TasksPage = () => {
           )}
         </div>
       </div>
-    </AppLayout>
+    </div>
   );
 };
 
