@@ -29,6 +29,7 @@ import {
   HoverCardTrigger,
 } from '@/components/ui/hover-card';
 import clyntoLogo from '@/assets/clynto-logo.png';
+import clyntoIcon from '@/assets/clynto-icon.png';
 
 // Context for sidebar state
 interface SidebarContextType {
@@ -161,41 +162,25 @@ export function AppSidebar() {
         role="navigation"
         aria-label="Main navigation"
       >
-        {/* Logo & Toggle */}
+        {/* Logo */}
         <div className={cn(
           "flex items-center mb-6",
-          isExpanded ? "justify-start px-1 gap-2" : "justify-center"
+          isExpanded ? "justify-start px-1" : "justify-center"
         )}>
-          <img 
-            src={clyntoLogo} 
-            alt="Clynto AI" 
-            className={cn(
-              "object-contain",
-              isExpanded ? "h-10 w-auto" : "h-8 w-8"
-            )} 
-          />
-        </div>
-
-        {/* Expand/Collapse Toggle */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className={cn(
-            "w-full h-8 flex items-center gap-2 rounded-lg transition-all duration-150 mb-4",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-            "hover:bg-muted text-muted-foreground hover:text-foreground",
-            isExpanded ? "px-3 justify-start" : "justify-center"
-          )}
-          aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
-        >
           {isExpanded ? (
-            <>
-              <ChevronLeft className="w-4 h-4" />
-              <span className="text-xs font-medium">Collapse</span>
-            </>
+            <img 
+              src={clyntoLogo} 
+              alt="Clynto AI" 
+              className="h-10 w-auto object-contain"
+            />
           ) : (
-            <ChevronRight className="w-4 h-4" />
+            <img 
+              src={clyntoIcon} 
+              alt="Clynto AI" 
+              className="h-8 w-8 object-contain"
+            />
           )}
-        </button>
+        </div>
 
         {/* Main Navigation Items */}
         <div className="flex-1 flex flex-col gap-1 py-2 overflow-y-auto">
@@ -210,8 +195,30 @@ export function AppSidebar() {
           ))}
         </div>
 
-        {/* Settings Button - Pinned at Bottom with Hover Dropdown */}
-        <div className="pt-4 border-t border-border">
+        {/* Bottom Section - Toggle & Settings */}
+        <div className="pt-4 border-t border-border space-y-1">
+          {/* Expand/Collapse Toggle */}
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={cn(
+              "w-full h-10 flex items-center gap-3 rounded-lg transition-all duration-150",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+              "hover:bg-muted text-muted-foreground hover:text-foreground",
+              isExpanded ? "px-3" : "justify-center"
+            )}
+            aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            {isExpanded ? (
+              <>
+                <ChevronLeft className="w-5 h-5" />
+                <span className="text-sm font-medium">Collapse</span>
+              </>
+            ) : (
+              <ChevronRight className="w-5 h-5" />
+            )}
+          </button>
+
+          {/* Settings */}
           <HoverCard openDelay={0} closeDelay={150}>
             <HoverCardTrigger asChild>
               <button
