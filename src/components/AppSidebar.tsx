@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   MessageSquare, 
@@ -14,9 +14,8 @@ import {
   Settings,
   User,
   Sliders,
-  X,
-  Clock,
-  Play
+  ChevronRight,
+  ChevronLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -29,6 +28,19 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from '@/components/ui/hover-card';
+
+// Context for sidebar state
+interface SidebarContextType {
+  isExpanded: boolean;
+  setIsExpanded: (value: boolean) => void;
+}
+
+const SidebarContext = createContext<SidebarContextType>({
+  isExpanded: false,
+  setIsExpanded: () => {},
+});
+
+export const useSidebarState = () => useContext(SidebarContext);
 
 // Navigation items in specified order (Health removed)
 const mainNavItems = [
@@ -50,39 +62,57 @@ const settingsItems = [
   { title: 'Properties', url: '/settings/health-score', icon: Sliders },
 ];
 
-interface NavIconButtonProps {
+interface NavItemProps {
   item: { title: string; url: string; icon: React.ElementType };
   isActive: boolean;
+  isExpanded: boolean;
   onClick: () => void;
 }
 
-function NavIconButton({ item, isActive, onClick }: NavIconButtonProps) {
+function NavItem({ item, isActive, isExpanded, onClick }: NavItemProps) {
   const Icon = item.icon;
   
+  const button = (
+    <button
+      onClick={onClick}
+      className={cn(
+        'w-full h-10 flex items-center gap-3 rounded-lg transition-all duration-150 relative',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50',
+        isExpanded ? 'px-3' : 'justify-center',
+        isActive 
+          ? 'bg-white/20' 
+          : 'hover:bg-white/10'
+      )}
+      aria-label={item.title}
+    >
+      <Icon 
+        className={cn(
+          'w-5 h-5 flex-shrink-0 transition-colors',
+          isActive ? 'text-white' : 'text-white/70'
+        )} 
+      />
+      {isExpanded && (
+        <span className={cn(
+          'text-sm font-medium truncate transition-colors',
+          isActive ? 'text-white' : 'text-white/70'
+        )}>
+          {item.title}
+        </span>
+      )}
+      {isActive && (
+        <span className="absolute left-0 w-0.5 h-6 bg-white rounded-r-full" />
+      )}
+    </button>
+  );
+
+  if (isExpanded) {
+    return button;
+  }
+
   return (
     <Tooltip delayDuration={0}>
       <TooltipTrigger asChild>
-        <button
-          onClick={onClick}
-          className={cn(
-            'w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-150 relative',
-            'focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50',
-            isActive 
-              ? 'bg-white/20' 
-              : 'hover:bg-white/10'
-          )}
-          aria-label={item.title}
-        >
-          <Icon 
-            className={cn(
-              'w-5 h-5 transition-colors',
-              isActive ? 'text-white' : 'text-white/70'
-            )} 
-          />
-          {isActive && (
-            <span className="absolute left-0 w-0.5 h-6 bg-white rounded-r-full" />
-          )}
-        </button>
+        {button}
       </TooltipTrigger>
       <TooltipContent 
         side="right" 
@@ -95,9 +125,20 @@ function NavIconButton({ item, isActive, onClick }: NavIconButtonProps) {
   );
 }
 
+export function SidebarProvider({ children }: { children: React.ReactNode }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  return (
+    <SidebarContext.Provider value={{ isExpanded, setIsExpanded }}>
+      {children}
+    </SidebarContext.Provider>
+  );
+}
+
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isExpanded, setIsExpanded } = useSidebarState();
 
   const isActive = (path: string) => location.pathname === path;
   const isSettingsActive = settingsItems.some(item => location.pathname === item.url);
@@ -107,25 +148,60 @@ export function AppSidebar() {
   };
 
   return (
-    <div className="flex h-screen fixed left-0 top-0 z-50">
+    <div 
+      className={cn(
+        "flex h-screen fixed left-0 top-0 z-50 transition-all duration-200",
+        isExpanded ? "w-56" : "w-14"
+      )}
+    >
       {/* Main Navigation Rail */}
       <nav 
-        className="w-14 h-full bg-primary flex flex-col items-center py-4 flex-shrink-0"
+        className="w-full h-full bg-primary flex flex-col py-4 px-2 flex-shrink-0"
         role="navigation"
         aria-label="Main navigation"
       >
-        {/* Logo */}
-        <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center mb-6">
-          <span className="text-white font-bold text-sm">C</span>
+        {/* Logo & Toggle */}
+        <div className={cn(
+          "flex items-center mb-6",
+          isExpanded ? "justify-between px-1" : "justify-center"
+        )}>
+          <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+            <span className="text-white font-bold text-sm">C</span>
+          </div>
+          {isExpanded && (
+            <span className="text-white font-semibold text-lg">Clynto</span>
+          )}
         </div>
 
+        {/* Expand/Collapse Toggle */}
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className={cn(
+            "w-full h-8 flex items-center gap-2 rounded-lg transition-all duration-150 mb-4",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
+            "hover:bg-white/10 text-white/70 hover:text-white",
+            isExpanded ? "px-3 justify-start" : "justify-center"
+          )}
+          aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
+        >
+          {isExpanded ? (
+            <>
+              <ChevronLeft className="w-4 h-4" />
+              <span className="text-xs font-medium">Collapse</span>
+            </>
+          ) : (
+            <ChevronRight className="w-4 h-4" />
+          )}
+        </button>
+
         {/* Main Navigation Items */}
-        <div className="flex-1 flex flex-col items-center gap-1 py-2">
+        <div className="flex-1 flex flex-col gap-1 py-2 overflow-y-auto">
           {mainNavItems.map((item) => (
-            <NavIconButton
+            <NavItem
               key={item.url}
               item={item}
               isActive={isActive(item.url)}
+              isExpanded={isExpanded}
               onClick={() => handleNavClick(item.url)}
             />
           ))}
@@ -137,8 +213,9 @@ export function AppSidebar() {
             <HoverCardTrigger asChild>
               <button
                 className={cn(
-                  'w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-150',
+                  'w-full h-10 flex items-center gap-3 rounded-lg transition-all duration-150',
                   'focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50',
+                  isExpanded ? 'px-3' : 'justify-center',
                   isSettingsActive
                     ? 'bg-white/20' 
                     : 'hover:bg-white/10'
@@ -147,10 +224,18 @@ export function AppSidebar() {
               >
                 <Settings 
                   className={cn(
-                    'w-5 h-5 transition-colors',
+                    'w-5 h-5 flex-shrink-0 transition-colors',
                     isSettingsActive ? 'text-white' : 'text-white/70'
                   )} 
                 />
+                {isExpanded && (
+                  <span className={cn(
+                    'text-sm font-medium',
+                    isSettingsActive ? 'text-white' : 'text-white/70'
+                  )}>
+                    Settings
+                  </span>
+                )}
               </button>
             </HoverCardTrigger>
             <HoverCardContent 
