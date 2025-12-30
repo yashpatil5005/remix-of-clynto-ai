@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { MessageSquare, GitBranch, ChevronDown, ChevronRight, Sparkles, Users, Activity, Zap, Building2, Heart, DollarSign, Video, Ticket, Settings, User, Link2, Key, Sliders, Database, Workflow, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { MessageSquare, GitBranch, ChevronDown, ChevronRight, Sparkles, Users, Activity, Zap, Building2, Heart, DollarSign, Video, Ticket, Settings, User, Link2, Key, Sliders, Database, Workflow, PanelLeftClose, PanelLeft, CalendarCheck } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -28,6 +28,7 @@ const workflowSubItems = [
 
 const accountCanvasSubItems = [
   { title: 'All Accounts', url: '/accounts/all', icon: Building2 },
+  { title: 'Tasks', url: '/accounts/tasks', icon: CalendarCheck },
   { title: 'Health', url: '/accounts/health', icon: Heart },
   { title: 'Revenue & Forecast', url: '/accounts/revenue', icon: DollarSign },
   { title: 'Meetings & Recordings', url: '/accounts/meetings', icon: Video },
