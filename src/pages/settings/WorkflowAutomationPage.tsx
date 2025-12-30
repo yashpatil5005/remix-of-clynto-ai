@@ -72,7 +72,8 @@ export default function WorkflowAutomationPage() {
   const [createOpen, setCreateOpen] = useState(false);
 
   return (
-    <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
+    <>
+      <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
         <div className="p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -191,6 +192,6 @@ export default function WorkflowAutomationPage() {
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </>
   );
 }

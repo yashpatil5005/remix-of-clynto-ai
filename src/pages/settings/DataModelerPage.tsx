@@ -68,7 +68,8 @@ export default function DataModelerPage() {
   };
 
   return (
-    <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
+    <>
+      <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
         <div className="p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -173,6 +174,6 @@ export default function DataModelerPage() {
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </>
   );
 }

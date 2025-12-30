@@ -747,7 +747,6 @@ const TasksPage = () => {
               })}
             </div>
           )}
-        </div>
       </div>
     </div>
   );
