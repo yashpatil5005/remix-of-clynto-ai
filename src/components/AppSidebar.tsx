@@ -6,7 +6,6 @@ import {
   Users, 
   CalendarCheck, 
   Building2, 
-  Heart, 
   DollarSign, 
   Video, 
   Ticket, 
@@ -15,7 +14,9 @@ import {
   Settings,
   User,
   Sliders,
-  X
+  X,
+  Clock,
+  Play
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -23,15 +24,25 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from '@/components/ui/hover-card';
 
-// Navigation items in specified order
+// Orchestrator sub-pages
+const orchestratorSubItems = [
+  { title: 'Accounts Awaiting Activation', url: '/workflow/orchestrator-awaiting', icon: Clock },
+  { title: 'Active Workflow Execution', url: '/workflow/orchestrator-active', icon: Play },
+];
+
+// Navigation items in specified order (Health removed)
 const mainNavItems = [
   { title: 'Chat with Larry', url: '/home', icon: MessageSquare },
-  { title: 'Orchestrator AI', url: '/workflow/orchestrator-ai', icon: Zap },
+  { title: 'Orchestrator AI', url: '/workflow/orchestrator-ai', icon: Zap, hasSubmenu: true },
   { title: 'CSM Feed', url: '/workflow/csm-feed', icon: Users },
   { title: 'Tasks', url: '/accounts/tasks', icon: CalendarCheck },
   { title: 'Accounts', url: '/accounts/all', icon: Building2 },
-  { title: 'Health', url: '/accounts/health', icon: Heart },
   { title: 'Revenue & Forecast', url: '/accounts/revenue', icon: DollarSign },
   { title: 'Meetings & Recordings', url: '/accounts/meetings', icon: Video },
   { title: 'Tickets', url: '/accounts/tickets', icon: Ticket },
@@ -46,13 +57,86 @@ const settingsItems = [
 ];
 
 interface NavIconButtonProps {
-  item: { title: string; url: string; icon: React.ElementType };
+  item: { title: string; url: string; icon: React.ElementType; hasSubmenu?: boolean };
   isActive: boolean;
   onClick: () => void;
 }
 
 function NavIconButton({ item, isActive, onClick }: NavIconButtonProps) {
   const Icon = item.icon;
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Check if this is orchestrator and if any sub-item is active
+  const isOrchestratorActive = item.hasSubmenu && 
+    (location.pathname === item.url || orchestratorSubItems.some(sub => location.pathname === sub.url));
+  
+  const activeState = isActive || isOrchestratorActive;
+  
+  if (item.hasSubmenu) {
+    return (
+      <HoverCard openDelay={0} closeDelay={100}>
+        <HoverCardTrigger asChild>
+          <button
+            onClick={onClick}
+            className={cn(
+              'w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-150 relative',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50',
+              activeState 
+                ? 'bg-white/20' 
+                : 'hover:bg-white/10'
+            )}
+            aria-label={item.title}
+          >
+            <Icon 
+              className={cn(
+                'w-5 h-5 transition-colors',
+                activeState ? 'text-white' : 'text-white/70'
+              )} 
+            />
+            {activeState && (
+              <span className="absolute left-0 w-0.5 h-6 bg-white rounded-r-full" />
+            )}
+          </button>
+        </HoverCardTrigger>
+        <HoverCardContent 
+          side="right" 
+          sideOffset={8}
+          align="start"
+          className="w-56 p-2 bg-card border border-border shadow-xl"
+        >
+          <div className="space-y-1">
+            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              {item.title}
+            </div>
+            {orchestratorSubItems.map((subItem) => {
+              const SubIcon = subItem.icon;
+              const subActive = location.pathname === subItem.url;
+              return (
+                <button
+                  key={subItem.url}
+                  onClick={() => navigate(subItem.url)}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-150',
+                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+                    subActive 
+                      ? 'bg-primary/10 text-primary font-medium' 
+                      : 'text-foreground hover:bg-muted'
+                  )}
+                >
+                  <SubIcon className={cn(
+                    'w-4 h-4',
+                    subActive ? 'text-primary' : 'text-muted-foreground'
+                  )} />
+                  <span>{subItem.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        </HoverCardContent>
+      </HoverCard>
+    );
+  }
   
   return (
     <Tooltip delayDuration={0}>
@@ -60,7 +144,7 @@ function NavIconButton({ item, isActive, onClick }: NavIconButtonProps) {
         <button
           onClick={onClick}
           className={cn(
-            'w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-150',
+            'w-10 h-10 flex items-center justify-center rounded-lg transition-all duration-150 relative',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50',
             isActive 
               ? 'bg-white/20' 
@@ -103,12 +187,17 @@ export function AppSidebar() {
     setSettingsPanelOpen(false);
   };
 
+  const handleSettingsItemClick = (url: string) => {
+    navigate(url);
+    // Don't close settings panel when clicking a settings page
+  };
+
   const handleSettingsClick = () => {
     setSettingsPanelOpen(!settingsPanelOpen);
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen fixed left-0 top-0 z-50">
       {/* Main Navigation Rail */}
       <nav 
         className="w-14 h-full bg-primary flex flex-col items-center py-4 flex-shrink-0"
@@ -121,7 +210,7 @@ export function AppSidebar() {
         </div>
 
         {/* Main Navigation Items */}
-        <div className="flex-1 flex flex-col items-center gap-1 overflow-y-auto py-2">
+        <div className="flex-1 flex flex-col items-center gap-1 py-2">
           {mainNavItems.map((item) => (
             <NavIconButton
               key={item.url}
@@ -197,7 +286,7 @@ export function AppSidebar() {
                 return (
                   <button
                     key={item.url}
-                    onClick={() => handleNavClick(item.url)}
+                    onClick={() => handleSettingsItemClick(item.url)}
                     className={cn(
                       'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150',
                       'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
