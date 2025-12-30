@@ -28,6 +28,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from '@/components/ui/hover-card';
+import clyntoLogo from '@/assets/clynto-logo.png';
 
 // Context for sidebar state
 interface SidebarContextType {
@@ -77,30 +78,30 @@ function NavItem({ item, isActive, isExpanded, onClick }: NavItemProps) {
       onClick={onClick}
       className={cn(
         'w-full h-10 flex items-center gap-3 rounded-lg transition-all duration-150 relative',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
         isExpanded ? 'px-3' : 'justify-center',
         isActive 
-          ? 'bg-white/20' 
-          : 'hover:bg-white/10'
+          ? 'bg-primary/10' 
+          : 'hover:bg-muted'
       )}
       aria-label={item.title}
     >
       <Icon 
         className={cn(
           'w-5 h-5 flex-shrink-0 transition-colors',
-          isActive ? 'text-white' : 'text-white/70'
+          isActive ? 'text-primary' : 'text-muted-foreground'
         )} 
       />
       {isExpanded && (
         <span className={cn(
           'text-sm font-medium truncate transition-colors',
-          isActive ? 'text-white' : 'text-white/70'
+          isActive ? 'text-primary' : 'text-foreground'
         )}>
           {item.title}
         </span>
       )}
       {isActive && (
-        <span className="absolute left-0 w-0.5 h-6 bg-white rounded-r-full" />
+        <span className="absolute left-0 w-0.5 h-6 bg-primary rounded-r-full" />
       )}
     </button>
   );
@@ -156,21 +157,23 @@ export function AppSidebar() {
     >
       {/* Main Navigation Rail */}
       <nav 
-        className="w-full h-full bg-primary flex flex-col py-4 px-2 flex-shrink-0"
+        className="w-full h-full bg-white border-r border-border flex flex-col py-4 px-2 flex-shrink-0"
         role="navigation"
         aria-label="Main navigation"
       >
         {/* Logo & Toggle */}
         <div className={cn(
           "flex items-center mb-6",
-          isExpanded ? "justify-between px-1" : "justify-center"
+          isExpanded ? "justify-start px-1 gap-2" : "justify-center"
         )}>
-          <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">C</span>
-          </div>
-          {isExpanded && (
-            <span className="text-white font-semibold text-lg">Clynto</span>
-          )}
+          <img 
+            src={clyntoLogo} 
+            alt="Clynto AI" 
+            className={cn(
+              "object-contain",
+              isExpanded ? "h-10 w-auto" : "h-8 w-8"
+            )} 
+          />
         </div>
 
         {/* Expand/Collapse Toggle */}
@@ -178,8 +181,8 @@ export function AppSidebar() {
           onClick={() => setIsExpanded(!isExpanded)}
           className={cn(
             "w-full h-8 flex items-center gap-2 rounded-lg transition-all duration-150 mb-4",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
-            "hover:bg-white/10 text-white/70 hover:text-white",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+            "hover:bg-muted text-muted-foreground hover:text-foreground",
             isExpanded ? "px-3 justify-start" : "justify-center"
           )}
           aria-label={isExpanded ? "Collapse sidebar" : "Expand sidebar"}
@@ -208,30 +211,30 @@ export function AppSidebar() {
         </div>
 
         {/* Settings Button - Pinned at Bottom with Hover Dropdown */}
-        <div className="pt-4 border-t border-white/10">
+        <div className="pt-4 border-t border-border">
           <HoverCard openDelay={0} closeDelay={150}>
             <HoverCardTrigger asChild>
               <button
                 className={cn(
                   'w-full h-10 flex items-center gap-3 rounded-lg transition-all duration-150',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
                   isExpanded ? 'px-3' : 'justify-center',
                   isSettingsActive
-                    ? 'bg-white/20' 
-                    : 'hover:bg-white/10'
+                    ? 'bg-primary/10' 
+                    : 'hover:bg-muted'
                 )}
                 aria-label="Settings"
               >
                 <Settings 
                   className={cn(
                     'w-5 h-5 flex-shrink-0 transition-colors',
-                    isSettingsActive ? 'text-white' : 'text-white/70'
+                    isSettingsActive ? 'text-primary' : 'text-muted-foreground'
                   )} 
                 />
                 {isExpanded && (
                   <span className={cn(
                     'text-sm font-medium',
-                    isSettingsActive ? 'text-white' : 'text-white/70'
+                    isSettingsActive ? 'text-primary' : 'text-foreground'
                   )}>
                     Settings
                   </span>
