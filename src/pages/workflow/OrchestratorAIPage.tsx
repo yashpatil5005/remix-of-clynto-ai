@@ -364,26 +364,26 @@ const OrchestratorAIPage: React.FC = () => {
             {/* Awaiting Accounts Table */}
             <div className="rounded-xl border border-border/60 overflow-hidden bg-card/30">
               {/* Header */}
-              <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-4 px-5 py-3 bg-secondary/40 border-b border-border/40 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <div className="grid grid-cols-[minmax(200px,2fr)_minmax(140px,1fr)_minmax(100px,1fr)_minmax(100px,1fr)_minmax(120px,1fr)_minmax(180px,auto)] gap-6 px-6 py-3 bg-secondary/40 border-b border-border/40 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 <span>Account</span>
                 <span>Segment / ARR</span>
                 <span>Source</span>
                 <span>Days Waiting</span>
                 <span>Suggested Stage</span>
-                <span>Actions</span>
+                <span className="text-right">Actions</span>
               </div>
 
               {/* Rows */}
               {awaitingAccounts.map((account) => (
                 <div
                   key={account.id}
-                  className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-4 px-5 py-3.5 border-b border-border/30 last:border-b-0 items-center hover:bg-secondary/20 transition-all"
+                  className="grid grid-cols-[minmax(200px,2fr)_minmax(140px,1fr)_minmax(100px,1fr)_minmax(100px,1fr)_minmax(120px,1fr)_minmax(180px,auto)] gap-6 px-6 py-4 border-b border-border/30 last:border-b-0 items-center hover:bg-secondary/20 transition-all"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0">
                       <Building2 className="w-4 h-4 text-primary" />
                     </div>
-                    <span className="font-medium text-sm">{account.name}</span>
+                    <span className="font-medium text-sm truncate">{account.name}</span>
                   </div>
 
                   <div className="text-sm">
@@ -391,9 +391,9 @@ const OrchestratorAIPage: React.FC = () => {
                     <span className="text-muted-foreground"> / {account.arr}</span>
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div>
                     <span className={cn(
-                      "px-2 py-0.5 rounded-full text-xs font-medium",
+                      "inline-flex px-2 py-0.5 rounded-full text-xs font-medium",
                       account.source === 'CRM' ? "bg-primary/10 text-primary" :
                       account.source === 'Bulk Upload' ? "bg-accent/10 text-accent" :
                       "bg-secondary text-muted-foreground"
@@ -412,12 +412,12 @@ const OrchestratorAIPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-stage-onboarding/15 text-[hsl(var(--stage-onboarding))]">
+                    <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-stage-onboarding/15 text-[hsl(var(--stage-onboarding))]">
                       {account.suggestedStage}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => openAssignPanel(account)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
