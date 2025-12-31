@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { 
   ChevronRight,
-  Plus,
   CheckCircle2,
   Building2,
   ArrowUpRight,
-  Eye,
   ListTodo,
   Workflow,
   Circle,
-  ChevronDown
+  ChevronDown,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  AlertTriangle,
+  Sparkles,
+  MessageSquare,
+  Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -168,30 +173,24 @@ const CSMFeedPage: React.FC = () => {
     return signal.state;
   };
 
-  const getTypeStyles = (type: SignalType) => {
-    const styles = {
-      risk: {
-        border: 'border-l-destructive',
-        label: 'text-destructive',
-        bg: 'bg-destructive/5',
-      },
-      opportunity: {
-        border: 'border-l-accent',
-        label: 'text-accent',
-        bg: 'bg-accent/5',
-      },
-      sentiment: {
-        border: 'border-l-warning',
-        label: 'text-warning',
-        bg: 'bg-warning/5',
-      },
-      usage: {
-        border: 'border-l-primary',
-        label: 'text-primary',
-        bg: 'bg-primary/5',
-      },
+  const getTypeIcon = (type: SignalType) => {
+    const icons = {
+      risk: AlertTriangle,
+      opportunity: Sparkles,
+      sentiment: MessageSquare,
+      usage: Activity,
     };
-    return styles[type];
+    return icons[type];
+  };
+
+  const getTypeLabel = (type: SignalType) => {
+    const labels = {
+      risk: 'Risk',
+      opportunity: 'Opportunity',
+      sentiment: 'Sentiment',
+      usage: 'Usage',
+    };
+    return labels[type];
   };
 
   const getImpactStyles = (impact: ImpactLevel) => {
@@ -203,10 +202,10 @@ const CSMFeedPage: React.FC = () => {
     return styles[impact];
   };
 
-  const getDirectionIndicator = (direction: 'up' | 'down' | 'neutral') => {
-    if (direction === 'up') return '↑';
-    if (direction === 'down') return '↓';
-    return '→';
+  const getDirectionIcon = (direction: 'up' | 'down' | 'neutral') => {
+    if (direction === 'up') return TrendingUp;
+    if (direction === 'down') return TrendingDown;
+    return Minus;
   };
 
   const handleAcknowledge = (signalId: string) => {
@@ -281,7 +280,7 @@ const CSMFeedPage: React.FC = () => {
                   className={cn(
                     "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
                     activeFilter === filter.id
-                      ? "bg-foreground text-background"
+                      ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                   )}
                 >
@@ -297,7 +296,7 @@ const CSMFeedPage: React.FC = () => {
                 className={cn(
                   "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
                   activeFilter === 'unactioned'
-                    ? "bg-foreground text-background"
+                    ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                 )}
               >
@@ -357,10 +356,10 @@ const CSMFeedPage: React.FC = () => {
               return (
                 <section key={type} className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <h2 className={cn("text-sm font-semibold uppercase tracking-wider", getTypeStyles(type).label)}>
+                    <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground/70">
                       {typeLabels[type]}
                     </h2>
-                    <span className="text-xs text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-full">
+                    <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
                       {typeSignals.length}
                     </span>
                   </div>
@@ -372,9 +371,10 @@ const CSMFeedPage: React.FC = () => {
                         signal={signal}
                         state={getSignalState(signal)}
                         actionType={actionedSignals[signal.id]}
-                        typeStyles={getTypeStyles(signal.type)}
                         impactStyles={getImpactStyles(signal.impact)}
-                        getDirectionIndicator={getDirectionIndicator}
+                        getTypeIcon={getTypeIcon}
+                        getTypeLabel={getTypeLabel}
+                        getDirectionIcon={getDirectionIcon}
                         onAcknowledge={handleAcknowledge}
                         onAction={handleAction}
                         animationDelay={index * 50}
@@ -394,9 +394,10 @@ const CSMFeedPage: React.FC = () => {
                 signal={signal}
                 state={getSignalState(signal)}
                 actionType={actionedSignals[signal.id]}
-                typeStyles={getTypeStyles(signal.type)}
                 impactStyles={getImpactStyles(signal.impact)}
-                getDirectionIndicator={getDirectionIndicator}
+                getTypeIcon={getTypeIcon}
+                getTypeLabel={getTypeLabel}
+                getDirectionIcon={getDirectionIcon}
                 onAcknowledge={handleAcknowledge}
                 onAction={handleAction}
                 animationDelay={index * 50}
@@ -420,9 +421,10 @@ interface SignalBlockProps {
   signal: Signal;
   state: SignalState;
   actionType?: 'tasks' | 'workflow';
-  typeStyles: { border: string; label: string; bg: string };
   impactStyles: string;
-  getDirectionIndicator: (direction: 'up' | 'down' | 'neutral') => string;
+  getTypeIcon: (type: SignalType) => React.FC<{ className?: string }>;
+  getTypeLabel: (type: SignalType) => string;
+  getDirectionIcon: (direction: 'up' | 'down' | 'neutral') => React.FC<{ className?: string }>;
   onAcknowledge: (id: string) => void;
   onAction: (id: string, type: 'tasks' | 'workflow') => void;
   animationDelay: number;
@@ -432,23 +434,24 @@ const SignalBlock: React.FC<SignalBlockProps> = ({
   signal,
   state,
   actionType,
-  typeStyles,
   impactStyles,
-  getDirectionIndicator,
+  getTypeIcon,
+  getTypeLabel,
+  getDirectionIcon,
   onAcknowledge,
   onAction,
   animationDelay,
 }) => {
   const isActioned = state === 'actioned';
   const isNew = state === 'new';
+  const TypeIcon = getTypeIcon(signal.type);
 
   return (
     <div
       className={cn(
-        "border-l-4 rounded-lg border border-border/40 bg-card/50 overflow-hidden transition-all duration-300",
-        typeStyles.border,
+        "rounded-xl border border-border/60 bg-card overflow-hidden transition-all duration-300",
         isActioned && "opacity-60",
-        "animate-fade-in"
+        "animate-fade-in hover:border-border"
       )}
       style={{ animationDelay: `${animationDelay}ms` }}
       onMouseEnter={() => isNew && onAcknowledge(signal.id)}
@@ -456,18 +459,19 @@ const SignalBlock: React.FC<SignalBlockProps> = ({
       <div className="p-5 space-y-4">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1.5 flex-1">
+          <div className="space-y-2 flex-1">
             {/* Account & Type */}
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-muted-foreground" />
                 <span className="font-semibold text-foreground">{signal.account}</span>
               </div>
-              <span className={cn("text-xs font-medium uppercase tracking-wider", typeStyles.label)}>
-                {signal.type}
-              </span>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-secondary text-foreground/80">
+                <TypeIcon className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">{getTypeLabel(signal.type)}</span>
+              </div>
               {isNew && (
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10">
                   <Circle className="w-2 h-2 fill-primary text-primary" />
                   <span className="text-xs text-primary font-medium">New</span>
                 </span>
@@ -479,7 +483,12 @@ const SignalBlock: React.FC<SignalBlockProps> = ({
           </div>
           
           {/* Impact Indicator */}
-          <div className={cn("text-xs uppercase tracking-wider", impactStyles)}>
+          <div className={cn(
+            "px-2.5 py-1 rounded-md text-xs uppercase tracking-wider",
+            signal.impact === 'high' && "bg-foreground/10 font-semibold text-foreground",
+            signal.impact === 'medium' && "bg-secondary font-medium text-foreground/80",
+            signal.impact === 'informational' && "bg-secondary/50 font-normal text-muted-foreground"
+          )}>
             {signal.impact === 'high' && 'High Impact'}
             {signal.impact === 'medium' && 'Medium'}
             {signal.impact === 'informational' && 'Info'}
@@ -492,25 +501,26 @@ const SignalBlock: React.FC<SignalBlockProps> = ({
         </p>
 
         {/* Evidence Strip */}
-        <div className={cn("rounded-md p-3 space-y-2", typeStyles.bg)}>
+        <div className="rounded-lg bg-secondary/50 p-4 space-y-3">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Evidence</span>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {signal.evidence.map((item, idx) => (
-              <div key={idx} className="text-xs">
-                <span className="text-muted-foreground">{item.metric}</span>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span className={cn(
-                    "font-medium",
-                    item.direction === 'up' && "text-accent",
-                    item.direction === 'down' && "text-destructive",
-                    item.direction === 'neutral' && "text-foreground"
-                  )}>
-                    {getDirectionIndicator(item.direction)}
-                  </span>
-                  <span className="text-foreground/80">{item.comparison}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {signal.evidence.map((item, idx) => {
+              const DirectionIcon = getDirectionIcon(item.direction);
+              return (
+                <div key={idx} className="space-y-1">
+                  <span className="text-xs text-muted-foreground">{item.metric}</span>
+                  <div className="flex items-center gap-1.5">
+                    <DirectionIcon className={cn(
+                      "w-3.5 h-3.5",
+                      item.direction === 'up' && "text-foreground",
+                      item.direction === 'down' && "text-foreground",
+                      item.direction === 'neutral' && "text-muted-foreground"
+                    )} />
+                    <span className="text-xs text-foreground/80">{item.comparison}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -527,16 +537,19 @@ const SignalBlock: React.FC<SignalBlockProps> = ({
         <div className="border-t border-border/40 bg-secondary/30 px-5 py-4">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1 flex-1">
-              <p className="text-sm font-medium text-foreground">
-                {signal.recommendation.action}
-              </p>
-              <p className="text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <ChevronRight className="w-4 h-4 text-primary" />
+                <p className="text-sm font-medium text-foreground">
+                  {signal.recommendation.action}
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground pl-6">
                 {signal.recommendation.rationale}
               </p>
             </div>
 
             {isActioned ? (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-accent/10 text-accent text-sm font-medium shrink-0">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary/10 text-primary text-sm font-medium shrink-0">
                 <CheckCircle2 className="w-4 h-4" />
                 {actionType === 'tasks' ? 'Added to Tasks' : 'Added to Workflow'}
               </div>
@@ -544,20 +557,20 @@ const SignalBlock: React.FC<SignalBlockProps> = ({
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => onAction(signal.id, 'tasks')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border/60 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border/60 bg-card text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
                 >
                   <ListTodo className="w-3.5 h-3.5" />
                   Add to Tasks
                 </button>
                 <button
                   onClick={() => onAction(signal.id, 'workflow')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border/60 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border/60 bg-card text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
                 >
                   <Workflow className="w-3.5 h-3.5" />
                   Add to Workflow
                 </button>
                 <button
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border/60 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border/60 bg-card text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
                 >
                   <ArrowUpRight className="w-3.5 h-3.5" />
                   View Account
