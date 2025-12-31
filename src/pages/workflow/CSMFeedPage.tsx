@@ -1,329 +1,572 @@
 import React, { useState } from 'react';
 import { 
-  Radio, 
-  AlertTriangle,
-  TrendingUp,
-  MessageSquare,
-  BarChart3,
   ChevronRight,
   Plus,
   CheckCircle2,
-  Clock,
-  Sparkles,
   Building2,
   ArrowUpRight,
-  Filter,
-  RefreshCw
+  Eye,
+  ListTodo,
+  Workflow,
+  Circle,
+  ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+type SignalType = 'risk' | 'opportunity' | 'sentiment' | 'usage';
+type SignalState = 'new' | 'acknowledged' | 'actioned';
+type ImpactLevel = 'high' | 'medium' | 'informational';
+
 interface Signal {
   id: string;
-  type: 'risk' | 'opportunity' | 'sentiment' | 'usage';
+  type: SignalType;
+  state: SignalState;
   account: string;
-  title: string;
-  explanation: string;
-  evidence: string[];
-  confidence: 'high' | 'medium' | 'low';
+  insight: string;
+  evidence: {
+    metric: string;
+    direction: 'up' | 'down' | 'neutral';
+    comparison: string;
+  }[];
+  impact: ImpactLevel;
   timestamp: string;
   recommendation?: {
     action: string;
-    addedToTasks?: boolean;
+    rationale: string;
   };
+  systemNote?: string;
 }
 
 const CSMFeedPage: React.FC = () => {
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [addedTasks, setAddedTasks] = useState<string[]>([]);
-
-  const signalFilters = [
-    { id: 'all', label: 'All Signals', icon: Radio },
-    { id: 'risk', label: 'Risk', icon: AlertTriangle },
-    { id: 'opportunity', label: 'Opportunity', icon: TrendingUp },
-    { id: 'sentiment', label: 'Sentiment', icon: MessageSquare },
-    { id: 'usage', label: 'Usage', icon: BarChart3 },
-  ];
+  const [activeFilter, setActiveFilter] = useState<'all' | SignalType | 'actioned' | 'unactioned'>('all');
+  const [impactFilter, setImpactFilter] = useState<'all' | ImpactLevel>('all');
+  const [actionedSignals, setActionedSignals] = useState<Record<string, 'tasks' | 'workflow'>>({});
+  const [acknowledgedSignals, setAcknowledgedSignals] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
 
   const signals: Signal[] = [
     {
       id: '1',
       type: 'risk',
+      state: 'new',
       account: 'Vertex Solutions',
-      title: 'Renewal risk detected',
-      explanation: 'Multiple negative signals converging ahead of Q1 renewal window.',
+      insight: 'Renewal risk elevated. Executive sponsor departed and NPS declined 25% in the last 30 days.',
       evidence: [
-        'NPS dropped from 8 to 6 in last 30 days',
-        'Executive sponsor changed to unknown contact',
-        'Support tickets increased 40% MoM',
+        { metric: 'NPS Score', direction: 'down', comparison: '8 → 6 (last 30d)' },
+        { metric: 'Sponsor Status', direction: 'down', comparison: 'Departed on Dec 15' },
+        { metric: 'Support Tickets', direction: 'up', comparison: '+40% MoM' },
       ],
-      confidence: 'high',
+      impact: 'high',
       timestamp: '2 hours ago',
       recommendation: {
-        action: 'Schedule executive alignment call before end of week',
+        action: 'Run Renewal Risk playbook',
+        rationale: 'Immediate executive re-alignment needed before Q1 renewal window',
       },
+      systemNote: 'Detected based on CRM changes and support data patterns',
     },
     {
       id: '2',
       type: 'opportunity',
+      state: 'new',
       account: 'Meridian Technologies',
-      title: 'Expansion readiness signal',
-      explanation: 'Account showing strong indicators for seat expansion and module add-on.',
+      insight: 'Expansion readiness confirmed. Power user growth and feature adoption indicate seat expansion opportunity.',
       evidence: [
-        'Power user count increased 45% in 90 days',
-        'Feature adoption rate at 92%',
-        'Positive QBR feedback with expansion interest noted',
+        { metric: 'Power Users', direction: 'up', comparison: '+45% in 90 days' },
+        { metric: 'Feature Adoption', direction: 'up', comparison: '92% of available features' },
+        { metric: 'QBR Sentiment', direction: 'up', comparison: 'Expansion interest noted' },
       ],
-      confidence: 'high',
+      impact: 'high',
       timestamp: '4 hours ago',
       recommendation: {
-        action: 'Prepare expansion proposal with ROI deck for VP of CS',
+        action: 'Prepare expansion proposal',
+        rationale: 'Account primed for upsell conversation with VP of CS',
       },
+      systemNote: 'Detected based on usage trends and recent QBR notes',
     },
     {
       id: '3',
       type: 'sentiment',
+      state: 'acknowledged',
       account: 'Nexus Global',
-      title: 'Sentiment shift detected',
-      explanation: 'Communication tone has shifted negatively across recent touchpoints.',
+      insight: 'Communication sentiment shifted negative. Response latency increased and meeting attendance dropped.',
       evidence: [
-        'Email response times increased from 2h to 12h average',
-        'Last QBR attendance reduced to 2 participants',
-        'Feature request marked as "critical" but unaddressed',
+        { metric: 'Response Time', direction: 'down', comparison: '2h → 12h avg' },
+        { metric: 'QBR Attendance', direction: 'down', comparison: '5 → 2 participants' },
+        { metric: 'Feature Request', direction: 'neutral', comparison: 'Marked critical, unaddressed' },
       ],
-      confidence: 'medium',
+      impact: 'medium',
       timestamp: '6 hours ago',
       recommendation: {
-        action: 'Initiate health check call with account team',
+        action: 'Initiate health check conversation',
+        rationale: 'Early intervention can prevent escalation',
       },
     },
     {
       id: '4',
       type: 'usage',
+      state: 'new',
       account: 'Summit Industries',
-      title: 'Usage pattern anomaly',
-      explanation: 'Significant drop in daily active users despite stable license count.',
+      insight: 'Product usage dropped 28% week-over-week across all user segments despite stable license count.',
       evidence: [
-        'DAU dropped 28% week-over-week',
-        'Core feature usage declined across all user segments',
-        'No reported technical issues in support queue',
+        { metric: 'Daily Active Users', direction: 'down', comparison: '-28% WoW' },
+        { metric: 'Core Feature Usage', direction: 'down', comparison: 'Declined across segments' },
+        { metric: 'Support Tickets', direction: 'neutral', comparison: 'No reported issues' },
       ],
-      confidence: 'medium',
+      impact: 'medium',
       timestamp: '8 hours ago',
       recommendation: {
-        action: 'Deploy re-engagement playbook and schedule product review',
+        action: 'Deploy re-engagement playbook',
+        rationale: 'Usage decline without support issues suggests adoption gap',
       },
+      systemNote: 'Detected based on product analytics patterns',
     },
     {
       id: '5',
       type: 'opportunity',
+      state: 'new',
       account: 'Pinnacle Tech',
-      title: 'Cross-sell opportunity identified',
-      explanation: 'Account usage patterns align with Analytics add-on value proposition.',
+      insight: 'Cross-sell signal detected. Heavy reporting usage at capacity with multiple analytics requests.',
       evidence: [
-        'Heavy usage of reporting features at capacity',
-        'Multiple requests for advanced analytics capabilities',
-        'Budget cycle aligns with Q2',
+        { metric: 'Reporting Usage', direction: 'up', comparison: 'At 95% capacity' },
+        { metric: 'Analytics Requests', direction: 'up', comparison: '3 requests in 60 days' },
+        { metric: 'Budget Cycle', direction: 'neutral', comparison: 'Aligns with Q2' },
       ],
-      confidence: 'medium',
+      impact: 'informational',
       timestamp: '1 day ago',
+    },
+    {
+      id: '6',
+      type: 'risk',
+      state: 'actioned',
+      account: 'Orion Systems',
+      insight: 'Contract value at risk. Pricing concerns raised during last touchpoint with procurement.',
+      evidence: [
+        { metric: 'Contract Value', direction: 'neutral', comparison: '$240K ARR' },
+        { metric: 'Procurement Contact', direction: 'down', comparison: 'Raised pricing concerns' },
+        { metric: 'Competitor Mentions', direction: 'up', comparison: '2 mentions in calls' },
+      ],
+      impact: 'high',
+      timestamp: '2 days ago',
+      recommendation: {
+        action: 'Prepare value realization deck',
+        rationale: 'Demonstrate ROI before competitor evaluation deepens',
+      },
     },
   ];
 
-  const getSignalColor = (type: Signal['type']) => {
-    switch (type) {
-      case 'risk': return 'text-destructive bg-destructive/10 border-destructive/20';
-      case 'opportunity': return 'text-accent bg-accent/10 border-accent/20';
-      case 'sentiment': return 'text-warning bg-warning/10 border-warning/20';
-      case 'usage': return 'text-primary bg-primary/10 border-primary/20';
-      default: return 'text-muted-foreground bg-secondary border-border/40';
+  const typeFilters: { id: 'all' | SignalType; label: string }[] = [
+    { id: 'all', label: 'All Signals' },
+    { id: 'risk', label: 'Risk' },
+    { id: 'opportunity', label: 'Opportunity' },
+    { id: 'sentiment', label: 'Sentiment' },
+    { id: 'usage', label: 'Usage' },
+  ];
+
+  const getSignalState = (signal: Signal): SignalState => {
+    if (actionedSignals[signal.id]) return 'actioned';
+    if (acknowledgedSignals.includes(signal.id)) return 'acknowledged';
+    return signal.state;
+  };
+
+  const getTypeStyles = (type: SignalType) => {
+    const styles = {
+      risk: {
+        border: 'border-l-destructive',
+        label: 'text-destructive',
+        bg: 'bg-destructive/5',
+      },
+      opportunity: {
+        border: 'border-l-accent',
+        label: 'text-accent',
+        bg: 'bg-accent/5',
+      },
+      sentiment: {
+        border: 'border-l-warning',
+        label: 'text-warning',
+        bg: 'bg-warning/5',
+      },
+      usage: {
+        border: 'border-l-primary',
+        label: 'text-primary',
+        bg: 'bg-primary/5',
+      },
+    };
+    return styles[type];
+  };
+
+  const getImpactStyles = (impact: ImpactLevel) => {
+    const styles = {
+      high: 'font-semibold text-foreground',
+      medium: 'font-medium text-foreground/80',
+      informational: 'font-normal text-muted-foreground',
+    };
+    return styles[impact];
+  };
+
+  const getDirectionIndicator = (direction: 'up' | 'down' | 'neutral') => {
+    if (direction === 'up') return '↑';
+    if (direction === 'down') return '↓';
+    return '→';
+  };
+
+  const handleAcknowledge = (signalId: string) => {
+    if (!acknowledgedSignals.includes(signalId)) {
+      setAcknowledgedSignals([...acknowledgedSignals, signalId]);
     }
   };
 
-  const getSignalIcon = (type: Signal['type']) => {
-    switch (type) {
-      case 'risk': return AlertTriangle;
-      case 'opportunity': return TrendingUp;
-      case 'sentiment': return MessageSquare;
-      case 'usage': return BarChart3;
-      default: return Radio;
-    }
-  };
-
-  const getConfidenceColor = (confidence: Signal['confidence']) => {
-    switch (confidence) {
-      case 'high': return 'bg-accent/20 text-accent';
-      case 'medium': return 'bg-warning/20 text-warning';
-      case 'low': return 'bg-muted text-muted-foreground';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
-
-  const handleAddToTasks = (signalId: string) => {
-    setAddedTasks([...addedTasks, signalId]);
+  const handleAction = (signalId: string, actionType: 'tasks' | 'workflow') => {
+    setActionedSignals({ ...actionedSignals, [signalId]: actionType });
   };
 
   const filteredSignals = signals.filter(signal => {
-    if (activeFilter === 'all') return true;
-    return signal.type === activeFilter;
+    const state = getSignalState(signal);
+    
+    // Type filter
+    if (activeFilter !== 'all' && activeFilter !== 'actioned' && activeFilter !== 'unactioned') {
+      if (signal.type !== activeFilter) return false;
+    }
+    
+    // Action state filter
+    if (activeFilter === 'actioned' && state !== 'actioned') return false;
+    if (activeFilter === 'unactioned' && state === 'actioned') return false;
+    
+    // Impact filter
+    if (impactFilter !== 'all' && signal.impact !== impactFilter) return false;
+    
+    return true;
   });
 
-  return (
-    <div className="min-h-screen bg-background overflow-y-auto">
-        {/* Page Header */}
-        <div className="border-b border-border/40 bg-card/30">
-          <div className="max-w-[1400px] mx-auto px-6 py-8">
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-warning to-warning/60 flex items-center justify-center shadow-lg shadow-warning/20">
-                    <Radio className="w-5 h-5 text-warning-foreground" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold tracking-tight">CSM Feed</h1>
-                    <p className="text-sm text-muted-foreground">Signals and recommendations requiring attention</p>
-                  </div>
-                </div>
-              </div>
+  // Group signals by type for visual organization
+  const groupedByType = filteredSignals.reduce((acc, signal) => {
+    if (!acc[signal.type]) acc[signal.type] = [];
+    acc[signal.type].push(signal);
+    return acc;
+  }, {} as Record<SignalType, Signal[]>);
 
-              {/* Actions */}
-              <div className="flex items-center gap-3">
-                <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all">
-                  <RefreshCw className="w-4 h-4" />
-                  <span className="text-sm">Refresh</span>
+  const typeOrder: SignalType[] = ['risk', 'opportunity', 'sentiment', 'usage'];
+  const typeLabels: Record<SignalType, string> = {
+    risk: 'Risk Signals',
+    opportunity: 'Opportunity Signals',
+    sentiment: 'Sentiment Signals',
+    usage: 'Usage Signals',
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Page Header */}
+      <div className="border-b border-border/40 bg-card/30 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-6 py-6">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">CSM Feed</h1>
+            <p className="text-sm text-muted-foreground">
+              Signals and recommendations requiring attention
+              <span className="mx-2 text-border">·</span>
+              <span className="text-muted-foreground/70">Live intelligence stream</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="border-b border-border/40 bg-card/20">
+        <div className="max-w-4xl mx-auto px-6 py-3">
+          <div className="flex items-center justify-between gap-4">
+            {/* Type Filters */}
+            <div className="flex items-center gap-1">
+              {typeFilters.map((filter) => (
+                <button
+                  key={filter.id}
+                  onClick={() => setActiveFilter(filter.id)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                    activeFilter === filter.id
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  )}
+                >
+                  {filter.label}
                 </button>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/5 border border-primary/20">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  <span className="text-xs font-medium text-primary">AI Generated</span>
-                </div>
+              ))}
+            </div>
+
+            {/* Additional Filters */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setActiveFilter(activeFilter === 'unactioned' ? 'all' : 'unactioned')}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                  activeFilter === 'unactioned'
+                    ? "bg-foreground text-background"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                )}
+              >
+                Unactioned
+              </button>
+              
+              <div className="relative">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                    showFilters || impactFilter !== 'all'
+                      ? "bg-secondary text-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  )}
+                >
+                  Impact
+                  <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", showFilters && "rotate-180")} />
+                </button>
+                
+                {showFilters && (
+                  <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[140px] z-20">
+                    {(['all', 'high', 'medium', 'informational'] as const).map((level) => (
+                      <button
+                        key={level}
+                        onClick={() => {
+                          setImpactFilter(level);
+                          setShowFilters(false);
+                        }}
+                        className={cn(
+                          "w-full px-3 py-2 text-left text-sm transition-colors",
+                          impactFilter === level
+                            ? "bg-secondary text-foreground"
+                            : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                        )}
+                      >
+                        {level === 'all' ? 'All Levels' : level.charAt(0).toUpperCase() + level.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="max-w-[1400px] mx-auto px-6 py-6 space-y-6">
-          {/* Filter Bar */}
-          <div className="flex items-center gap-2">
-            {signalFilters.map((filter) => (
-              <button
-                key={filter.id}
-                onClick={() => setActiveFilter(filter.id)}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-                  activeFilter === filter.id
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                    : "bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground border border-border/40"
-                )}
-              >
-                <filter.icon className="w-4 h-4" />
-                {filter.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Signal Feed */}
-          <div className="space-y-4">
-            {filteredSignals.map((signal) => {
-              const SignalIcon = getSignalIcon(signal.type);
-              const isAddedToTasks = addedTasks.includes(signal.id);
+      {/* Signal Feed */}
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        {activeFilter === 'all' || activeFilter === 'actioned' || activeFilter === 'unactioned' ? (
+          // Grouped view
+          <div className="space-y-10">
+            {typeOrder.map((type) => {
+              const typeSignals = groupedByType[type];
+              if (!typeSignals || typeSignals.length === 0) return null;
 
               return (
-                <div 
-                  key={signal.id}
-                  className="rounded-2xl border border-border/40 bg-card/50 overflow-hidden hover:border-primary/30 transition-all"
-                >
-                  {/* Signal Header */}
-                  <div className="p-6 space-y-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-4">
-                        {/* Signal Type Badge */}
-                        <div className={cn(
-                          "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-                          getSignalColor(signal.type).split(' ')[1]
-                        )}>
-                          <SignalIcon className={cn("w-5 h-5", getSignalColor(signal.type).split(' ')[0])} />
-                        </div>
-
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-semibold text-foreground">{signal.title}</h3>
-                            <span className={cn(
-                              "px-2 py-0.5 rounded-full text-xs font-medium capitalize",
-                              getConfidenceColor(signal.confidence)
-                            )}>
-                              {signal.confidence} confidence
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Building2 className="w-3.5 h-3.5" />
-                            <span className="font-medium text-foreground">{signal.account}</span>
-                            <span>·</span>
-                            <span>{signal.timestamp}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Explanation */}
-                    <p className="text-sm text-muted-foreground leading-relaxed pl-14">
-                      {signal.explanation}
-                    </p>
-
-                    {/* Evidence */}
-                    <div className="pl-14 space-y-2">
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Evidence</span>
-                      <ul className="space-y-1.5">
-                        {signal.evidence.map((item, idx) => (
-                          <li key={idx} className="flex items-start gap-2 text-sm">
-                            <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 mt-2 shrink-0" />
-                            <span className="text-muted-foreground">{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                <section key={type} className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <h2 className={cn("text-sm font-semibold uppercase tracking-wider", getTypeStyles(type).label)}>
+                      {typeLabels[type]}
+                    </h2>
+                    <span className="text-xs text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-full">
+                      {typeSignals.length}
+                    </span>
                   </div>
-
-                  {/* Recommendation Section */}
-                  {signal.recommendation && (
-                    <div className="border-t border-border/40 bg-secondary/20 px-6 py-4">
-                      <div className="flex items-center justify-between pl-14">
-                        <div className="space-y-1">
-                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recommended Action</span>
-                          <p className="text-sm font-medium text-foreground">{signal.recommendation.action}</p>
-                        </div>
-                        
-                        {isAddedToTasks ? (
-                          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/10 text-accent text-sm font-medium">
-                            <CheckCircle2 className="w-4 h-4" />
-                            Added to Tasks
-                          </div>
-                        ) : (
-                          <button 
-                            onClick={() => handleAddToTasks(signal.id)}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-primary/40 text-primary text-sm font-medium hover:bg-primary/5 transition-all"
-                          >
-                            <Plus className="w-4 h-4" />
-                            Add to Tasks
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  
+                  <div className="space-y-3">
+                    {typeSignals.map((signal, index) => (
+                      <SignalBlock
+                        key={signal.id}
+                        signal={signal}
+                        state={getSignalState(signal)}
+                        actionType={actionedSignals[signal.id]}
+                        typeStyles={getTypeStyles(signal.type)}
+                        impactStyles={getImpactStyles(signal.impact)}
+                        getDirectionIndicator={getDirectionIndicator}
+                        onAcknowledge={handleAcknowledge}
+                        onAction={handleAction}
+                        animationDelay={index * 50}
+                      />
+                    ))}
+                  </div>
+                </section>
               );
             })}
           </div>
+        ) : (
+          // Filtered by single type
+          <div className="space-y-3">
+            {filteredSignals.map((signal, index) => (
+              <SignalBlock
+                key={signal.id}
+                signal={signal}
+                state={getSignalState(signal)}
+                actionType={actionedSignals[signal.id]}
+                typeStyles={getTypeStyles(signal.type)}
+                impactStyles={getImpactStyles(signal.impact)}
+                getDirectionIndicator={getDirectionIndicator}
+                onAcknowledge={handleAcknowledge}
+                onAction={handleAction}
+                animationDelay={index * 50}
+              />
+            ))}
+          </div>
+        )}
 
-          {/* Empty State */}
-          {filteredSignals.length === 0 && (
-            <div className="text-center py-16">
-              <div className="w-16 h-16 rounded-2xl bg-secondary/50 flex items-center justify-center mx-auto mb-4">
-                <Radio className="w-8 h-8 text-muted-foreground" />
+        {/* Empty State */}
+        {filteredSignals.length === 0 && (
+          <div className="text-center py-20">
+            <p className="text-muted-foreground">No signals match your current filters</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+interface SignalBlockProps {
+  signal: Signal;
+  state: SignalState;
+  actionType?: 'tasks' | 'workflow';
+  typeStyles: { border: string; label: string; bg: string };
+  impactStyles: string;
+  getDirectionIndicator: (direction: 'up' | 'down' | 'neutral') => string;
+  onAcknowledge: (id: string) => void;
+  onAction: (id: string, type: 'tasks' | 'workflow') => void;
+  animationDelay: number;
+}
+
+const SignalBlock: React.FC<SignalBlockProps> = ({
+  signal,
+  state,
+  actionType,
+  typeStyles,
+  impactStyles,
+  getDirectionIndicator,
+  onAcknowledge,
+  onAction,
+  animationDelay,
+}) => {
+  const isActioned = state === 'actioned';
+  const isNew = state === 'new';
+
+  return (
+    <div
+      className={cn(
+        "border-l-4 rounded-lg border border-border/40 bg-card/50 overflow-hidden transition-all duration-300",
+        typeStyles.border,
+        isActioned && "opacity-60",
+        "animate-fade-in"
+      )}
+      style={{ animationDelay: `${animationDelay}ms` }}
+      onMouseEnter={() => isNew && onAcknowledge(signal.id)}
+    >
+      <div className="p-5 space-y-4">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1.5 flex-1">
+            {/* Account & Type */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-muted-foreground" />
+                <span className="font-semibold text-foreground">{signal.account}</span>
               </div>
-              <h3 className="text-lg font-semibold text-foreground">No signals found</h3>
-              <p className="text-sm text-muted-foreground mt-1">No signals match your current filter</p>
+              <span className={cn("text-xs font-medium uppercase tracking-wider", typeStyles.label)}>
+                {signal.type}
+              </span>
+              {isNew && (
+                <span className="flex items-center gap-1">
+                  <Circle className="w-2 h-2 fill-primary text-primary" />
+                  <span className="text-xs text-primary font-medium">New</span>
+                </span>
+              )}
             </div>
-          )}
+            
+            {/* Timestamp */}
+            <p className="text-xs text-muted-foreground">{signal.timestamp}</p>
+          </div>
+          
+          {/* Impact Indicator */}
+          <div className={cn("text-xs uppercase tracking-wider", impactStyles)}>
+            {signal.impact === 'high' && 'High Impact'}
+            {signal.impact === 'medium' && 'Medium'}
+            {signal.impact === 'informational' && 'Info'}
+          </div>
         </div>
+
+        {/* Insight */}
+        <p className={cn("text-sm leading-relaxed", impactStyles)}>
+          {signal.insight}
+        </p>
+
+        {/* Evidence Strip */}
+        <div className={cn("rounded-md p-3 space-y-2", typeStyles.bg)}>
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Evidence</span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {signal.evidence.map((item, idx) => (
+              <div key={idx} className="text-xs">
+                <span className="text-muted-foreground">{item.metric}</span>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span className={cn(
+                    "font-medium",
+                    item.direction === 'up' && "text-accent",
+                    item.direction === 'down' && "text-destructive",
+                    item.direction === 'neutral' && "text-foreground"
+                  )}>
+                    {getDirectionIndicator(item.direction)}
+                  </span>
+                  <span className="text-foreground/80">{item.comparison}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* System Note */}
+        {signal.systemNote && (
+          <p className="text-xs text-muted-foreground/70 italic">
+            {signal.systemNote}
+          </p>
+        )}
+      </div>
+
+      {/* Recommendation & Actions */}
+      {signal.recommendation && (
+        <div className="border-t border-border/40 bg-secondary/30 px-5 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1 flex-1">
+              <p className="text-sm font-medium text-foreground">
+                {signal.recommendation.action}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {signal.recommendation.rationale}
+              </p>
+            </div>
+
+            {isActioned ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-accent/10 text-accent text-sm font-medium shrink-0">
+                <CheckCircle2 className="w-4 h-4" />
+                {actionType === 'tasks' ? 'Added to Tasks' : 'Added to Workflow'}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => onAction(signal.id, 'tasks')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border/60 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+                >
+                  <ListTodo className="w-3.5 h-3.5" />
+                  Add to Tasks
+                </button>
+                <button
+                  onClick={() => onAction(signal.id, 'workflow')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border/60 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+                >
+                  <Workflow className="w-3.5 h-3.5" />
+                  Add to Workflow
+                </button>
+                <button
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border/60 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all"
+                >
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                  View Account
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
