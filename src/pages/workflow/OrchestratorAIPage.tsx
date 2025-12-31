@@ -1,27 +1,21 @@
 import React, { useState } from 'react';
 import { 
   Plus,
-  ChevronDown,
   Clock,
   CheckCircle2,
   Pause,
-  Zap,
-  Activity,
-  FileText,
+  Play,
   Building2,
-  Calendar,
-  ArrowUpRight,
-  MoreHorizontal,
   ChevronRight,
   Upload,
-  Settings2,
-  Layers
+  Layers,
+  AlertCircle,
+  Search
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import WorkflowVisualizationPanel from '@/components/workflow/WorkflowVisualizationPanel';
 import AccountImportDialog from '@/components/orchestrator/AccountImportDialog';
 import AssignPlaybookPanel from '@/components/orchestrator/AssignPlaybookPanel';
-import LarrySystemAwareness from '@/components/orchestrator/LarrySystemAwareness';
 
 // Types
 interface SubTask {
@@ -50,20 +44,26 @@ interface Phase {
   expanded?: boolean;
 }
 
-interface WorkflowTask {
+interface ActiveWorkflow {
   id: string;
-  account: string;
-  journeyPhase: string;
-  currentTask: string;
-  trigger: {
-    type: 'playbook' | 'system' | 'random_event';
-    label: string;
+  account: {
+    name: string;
+    segment: string;
+    arr: string;
   };
-  dueContext: 'today' | 'overdue' | 'scheduled';
-  dueDate?: string;
-  status: 'pending' | 'completed' | 'suspended';
-  priority: 'high' | 'medium' | 'low';
-  playbook?: string;
+  playbook: {
+    name: string;
+    lastActivity: string;
+  };
+  category: 'onboarding' | 'at_risk' | 'renewal' | 'expansion';
+  progress: {
+    currentPhase: number;
+    totalPhases: number;
+    percentage: number;
+  };
+  currentPhaseName: string;
+  phaseTimeline: string;
+  status: 'running' | 'attention' | 'paused' | 'completed';
   workflowData?: {
     phases: Phase[];
   };
@@ -80,15 +80,14 @@ interface AwaitingAccount {
 }
 
 const OrchestratorAIPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'awaiting' | 'active'>('awaiting');
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [expandedTask, setExpandedTask] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'awaiting' | 'active'>('active');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [workflowPanelOpen, setWorkflowPanelOpen] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState<WorkflowTask | null>(null);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<ActiveWorkflow | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [assignPanelOpen, setAssignPanelOpen] = useState(false);
   const [selectedAwaitingAccount, setSelectedAwaitingAccount] = useState<AwaitingAccount | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Accounts awaiting activation
   const awaitingAccounts: AwaitingAccount[] = [
@@ -99,187 +98,161 @@ const OrchestratorAIPage: React.FC = () => {
     { id: 'aw-5', name: 'Nova Systems', segment: 'Mid-Market', arr: '$85,000', source: 'CRM', daysSinceCreation: 4, suggestedStage: 'Onboarding' },
   ];
 
-  const instanceFilters = [
-    { id: 'all', label: 'All Instances', count: 47 },
-    { id: 'onboarding', label: 'Onboarding', count: 12 },
-    { id: 'at_risk', label: 'At Risk', count: 8 },
-    { id: 'renewal', label: 'Renewal', count: 18 },
-    { id: 'expansion', label: 'Expansion', count: 9 },
+  const categoryFilters = [
+    { id: 'all', label: 'All', count: 24 },
+    { id: 'onboarding', label: 'Onboarding', count: 8 },
+    { id: 'at_risk', label: 'At Risk', count: 4 },
+    { id: 'renewal', label: 'Renewal', count: 7 },
+    { id: 'expansion', label: 'Expansion', count: 5 },
   ];
 
-  const statusFilters = [
-    { id: 'all', label: 'All Tasks', count: 47 },
-    { id: 'pending', label: 'Pending', count: 23 },
-    { id: 'completed', label: 'Completed', count: 19 },
-    { id: 'suspended', label: 'Suspended', count: 5 },
-  ];
-
-  const sampleWorkflowPhases: Phase[] = [
-    {
-      id: 'preparation',
-      name: 'Preparation',
-      timeline: 'Pre Day 1',
-      tasks: [
-        {
-          id: 'prep-1',
-          name: 'Upload Contract',
-          description: 'Upload the signed contract to the system',
-          endGoal: 'Contract is accessible and terms are extracted',
-          attributesToUpdate: ['Contract', 'Contract Value', 'Contract Term'],
-          expectations: 'Automatically extracts key terms and populates account attributes',
-          subTasks: [
-            { id: 'prep-1-1', name: 'Verify contract signature', completed: true },
-            { id: 'prep-1-2', name: 'Extract key terms', completed: true },
-            { id: 'prep-1-3', name: 'Update account attributes', completed: false },
-          ],
-          completed: false,
-        },
-      ],
-    },
-    {
-      id: 'kickoff',
-      name: 'Kickoff & Alignment',
-      timeline: 'Days 1-3',
-      tasks: [
-        {
-          id: 'kickoff-1',
-          name: 'Schedule Kickoff Meeting',
-          description: 'Coordinate with stakeholders for kickoff',
-          endGoal: 'Meeting scheduled with all key stakeholders',
-          attributesToUpdate: ['Kickoff Date', 'Meeting Notes'],
-          expectations: 'Calendar invite sent, meeting notes auto-extracted post-meeting',
-          subTasks: [
-            { id: 'kickoff-1-1', name: 'Send calendar invite', completed: true },
-            { id: 'kickoff-1-2', name: 'Confirm attendees', completed: false },
-          ],
-          completed: false,
-        },
-      ],
-    },
-  ];
-
-  const tasks: WorkflowTask[] = [
+  // Active workflows data based on the reference image
+  const activeWorkflows: ActiveWorkflow[] = [
     {
       id: '1',
-      account: 'Meridian Technologies',
-      journeyPhase: 'Kickoff & Alignment',
-      currentTask: 'Schedule kickoff meeting with stakeholders',
-      trigger: { type: 'playbook', label: 'Onboarding Playbook' },
-      dueContext: 'today',
-      status: 'pending',
-      priority: 'high',
-      playbook: 'Enterprise Onboarding',
-      workflowData: { phases: sampleWorkflowPhases },
+      account: { name: 'Meridian Technologies', segment: 'Enterprise', arr: '$420,000' },
+      playbook: { name: 'Enterprise Onboarding', lastActivity: '2 hours ago' },
+      category: 'onboarding',
+      progress: { currentPhase: 2, totalPhases: 6, percentage: 35 },
+      currentPhaseName: 'Kickoff & Alignment',
+      phaseTimeline: '3d in phase',
+      status: 'running',
     },
     {
       id: '2',
-      account: 'Axiom Corp',
-      journeyPhase: 'Adoption',
-      currentTask: 'Initiate re-engagement playbook',
-      trigger: { type: 'system', label: 'Usage dropped 32%' },
-      dueContext: 'overdue',
-      dueDate: '2 days ago',
-      status: 'pending',
-      priority: 'high',
-      playbook: 'Re-engagement',
-      workflowData: { phases: sampleWorkflowPhases },
+      account: { name: 'Axiom Corp', segment: 'Enterprise', arr: '$280,000' },
+      playbook: { name: 'Risk Mitigation', lastActivity: '1 day ago' },
+      category: 'at_risk',
+      progress: { currentPhase: 1, totalPhases: 4, percentage: 20 },
+      currentPhaseName: 'Assessment',
+      phaseTimeline: '5d in phase',
+      status: 'attention',
     },
     {
       id: '3',
-      account: 'Summit Industries',
-      journeyPhase: 'Expansion',
-      currentTask: 'Schedule expansion discovery call',
-      trigger: { type: 'system', label: 'Power user growth +45%' },
-      dueContext: 'scheduled',
-      dueDate: 'Tomorrow',
-      status: 'pending',
-      priority: 'medium',
-      playbook: 'Expansion Playbook',
-      workflowData: { phases: sampleWorkflowPhases },
+      account: { name: 'Summit Industries', segment: 'Mid-Market', arr: '$145,000' },
+      playbook: { name: 'Expansion Discovery', lastActivity: '4 hours ago' },
+      category: 'expansion',
+      progress: { currentPhase: 3, totalPhases: 5, percentage: 60 },
+      currentPhaseName: 'Value Mapping',
+      phaseTimeline: '2d in phase',
+      status: 'running',
     },
     {
       id: '4',
-      account: 'Nexus Global',
-      journeyPhase: 'Adoption',
-      currentTask: 'Review escalated ticket',
-      trigger: { type: 'random_event', label: 'Support escalation' },
-      dueContext: 'today',
-      status: 'pending',
-      priority: 'high',
+      account: { name: 'Pinnacle Tech', segment: 'Enterprise', arr: '$380,000' },
+      playbook: { name: 'Renewal 90-Day', lastActivity: '6 hours ago' },
+      category: 'renewal',
+      progress: { currentPhase: 3, totalPhases: 6, percentage: 45 },
+      currentPhaseName: 'Stakeholder Alignment',
+      phaseTimeline: '4d in phase',
+      status: 'running',
     },
     {
       id: '5',
-      account: 'Vertex Solutions',
-      journeyPhase: 'At Risk',
-      currentTask: 'Schedule urgent health check call',
-      trigger: { type: 'system', label: 'NPS dropped to 6' },
-      dueContext: 'today',
-      status: 'suspended',
-      priority: 'high',
-      playbook: 'Risk Mitigation',
-      workflowData: { phases: sampleWorkflowPhases },
+      account: { name: 'Vertex Solutions', segment: 'Mid-Market', arr: '$195,000' },
+      playbook: { name: 'Enterprise Onboarding', lastActivity: '1 hour ago' },
+      category: 'onboarding',
+      progress: { currentPhase: 4, totalPhases: 6, percentage: 70 },
+      currentPhaseName: 'Configuration',
+      phaseTimeline: '1d in phase',
+      status: 'running',
     },
     {
       id: '6',
-      account: 'Pinnacle Tech',
-      journeyPhase: 'Renewal',
-      currentTask: 'Send renewal preparation email',
-      trigger: { type: 'playbook', label: 'Renewal 90-day' },
-      dueContext: 'scheduled',
-      dueDate: 'Next week',
-      status: 'completed',
-      priority: 'low',
-      playbook: 'Renewal 90-Day',
-      workflowData: { phases: sampleWorkflowPhases },
+      account: { name: 'Nexus Global', segment: 'Enterprise', arr: '$520,000' },
+      playbook: { name: 'Renewal 90-Day', lastActivity: '3 hours ago' },
+      category: 'renewal',
+      progress: { currentPhase: 5, totalPhases: 6, percentage: 85 },
+      currentPhaseName: 'Contract Review',
+      phaseTimeline: '2d in phase',
+      status: 'running',
     },
   ];
 
-  const getTriggerIcon = (type: WorkflowTask['trigger']['type']) => {
-    switch (type) {
-      case 'playbook': return FileText;
-      case 'system': return Activity;
-      case 'random_event': return Zap;
-      default: return Zap;
+  const getCategoryConfig = (category: ActiveWorkflow['category']) => {
+    switch (category) {
+      case 'onboarding':
+        return { 
+          label: 'Onboarding', 
+          bgClass: 'bg-primary/10', 
+          textClass: 'text-primary',
+          borderClass: 'border-primary/20',
+          progressClass: 'bg-primary'
+        };
+      case 'at_risk':
+        return { 
+          label: 'At Risk', 
+          bgClass: 'bg-destructive/10', 
+          textClass: 'text-destructive',
+          borderClass: 'border-destructive/20',
+          progressClass: 'bg-destructive'
+        };
+      case 'renewal':
+        return { 
+          label: 'Renewal', 
+          bgClass: 'bg-warning/10', 
+          textClass: 'text-warning',
+          borderClass: 'border-warning/20',
+          progressClass: 'bg-warning'
+        };
+      case 'expansion':
+        return { 
+          label: 'Expansion', 
+          bgClass: 'bg-accent/10', 
+          textClass: 'text-accent',
+          borderClass: 'border-accent/20',
+          progressClass: 'bg-accent'
+        };
     }
   };
 
-  const getTriggerColor = (type: WorkflowTask['trigger']['type']) => {
-    switch (type) {
-      case 'playbook': return 'text-primary bg-primary/10 border-primary/20';
-      case 'system': return 'text-warning bg-warning/10 border-warning/20';
-      case 'random_event': return 'text-muted-foreground bg-secondary border-border/40';
-      default: return 'text-muted-foreground bg-secondary border-border/40';
-    }
-  };
-
-  const getDueColor = (context: WorkflowTask['dueContext']) => {
-    switch (context) {
-      case 'overdue': return 'text-destructive';
-      case 'today': return 'text-warning';
-      case 'scheduled': return 'text-muted-foreground';
-      default: return 'text-muted-foreground';
-    }
-  };
-
-  const getStatusIcon = (status: WorkflowTask['status']) => {
+  const getStatusConfig = (status: ActiveWorkflow['status']) => {
     switch (status) {
-      case 'completed': return CheckCircle2;
-      case 'suspended': return Pause;
-      default: return Clock;
+      case 'running':
+        return { 
+          label: 'Running', 
+          icon: Play, 
+          bgClass: 'bg-accent/10', 
+          textClass: 'text-accent',
+          borderClass: 'border-accent/30'
+        };
+      case 'attention':
+        return { 
+          label: 'Attention Required', 
+          icon: AlertCircle, 
+          bgClass: 'bg-warning/10', 
+          textClass: 'text-warning',
+          borderClass: 'border-warning/30'
+        };
+      case 'paused':
+        return { 
+          label: 'Paused', 
+          icon: Pause, 
+          bgClass: 'bg-muted', 
+          textClass: 'text-muted-foreground',
+          borderClass: 'border-border'
+        };
+      case 'completed':
+        return { 
+          label: 'Completed', 
+          icon: CheckCircle2, 
+          bgClass: 'bg-accent/10', 
+          textClass: 'text-accent',
+          borderClass: 'border-accent/30'
+        };
     }
   };
 
-  const filteredTasks = tasks.filter(task => {
-    if (statusFilter !== 'all' && task.status !== statusFilter) return false;
-    if (activeFilter === 'onboarding') return task.journeyPhase.includes('Kickoff') || task.journeyPhase.includes('Setup');
-    if (activeFilter === 'at_risk') return task.journeyPhase === 'At Risk' || task.trigger.type === 'system';
-    if (activeFilter === 'renewal') return task.journeyPhase === 'Renewal';
-    if (activeFilter === 'expansion') return task.journeyPhase === 'Expansion';
-    return true;
+  const filteredWorkflows = activeWorkflows.filter(workflow => {
+    const matchesCategory = categoryFilter === 'all' || workflow.category === categoryFilter;
+    const matchesSearch = workflow.account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          workflow.playbook.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
   });
 
-  const openWorkflowPanel = (task: WorkflowTask) => {
-    setSelectedAccount(task);
+  const openWorkflowPanel = (workflow: ActiveWorkflow) => {
+    setSelectedWorkflow(workflow);
     setWorkflowPanelOpen(true);
   };
 
@@ -301,8 +274,8 @@ const OrchestratorAIPage: React.FC = () => {
         <div className="px-6 py-6">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
-              <h1 className="text-2xl font-semibold tracking-tight">Orchestrator AI</h1>
-              <p className="text-sm text-muted-foreground">Lifecycle assignment and live workflow execution</p>
+              <h1 className="text-2xl font-semibold tracking-tight">Orchestrator</h1>
+              <p className="text-sm text-muted-foreground">Lifecycle assignment and workflow execution</p>
             </div>
 
             {/* System Indicators */}
@@ -314,19 +287,13 @@ const OrchestratorAIPage: React.FC = () => {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
                   </span>
                   <span className="text-muted-foreground">Active</span>
-                  <span className="font-semibold text-foreground">23</span>
+                  <span className="font-semibold text-foreground">{activeWorkflows.length}</span>
                 </div>
                 <div className="h-4 w-px bg-border" />
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-warning" />
                   <span className="text-muted-foreground">Awaiting</span>
                   <span className="font-semibold text-foreground">{awaitingAccounts.length}</span>
-                </div>
-                <div className="h-4 w-px bg-border" />
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-muted-foreground" />
-                  <span className="text-muted-foreground">Paused</span>
-                  <span className="font-semibold text-foreground">3</span>
                 </div>
               </div>
 
@@ -343,24 +310,24 @@ const OrchestratorAIPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation - Clear distinction between 2 pages */}
       <div className="px-6 pt-4 border-b border-border/40">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveTab('awaiting')}
             className={cn(
-              "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all -mb-px",
+              "relative flex items-center gap-2.5 px-5 py-3 text-sm font-medium rounded-t-xl transition-all",
               activeTab === 'awaiting'
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                ? "bg-card text-foreground border border-border/60 border-b-card -mb-px shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
             )}
           >
             <Clock className="w-4 h-4" />
-            Accounts Awaiting Activation
+            <span>Accounts Awaiting Activation</span>
             <span className={cn(
               "px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums",
               activeTab === 'awaiting'
-                ? "bg-primary/15 text-primary"
+                ? "bg-warning/15 text-warning"
                 : "bg-secondary text-muted-foreground"
             )}>
               {awaitingAccounts.length}
@@ -369,21 +336,21 @@ const OrchestratorAIPage: React.FC = () => {
           <button
             onClick={() => setActiveTab('active')}
             className={cn(
-              "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all -mb-px",
+              "relative flex items-center gap-2.5 px-5 py-3 text-sm font-medium rounded-t-xl transition-all",
               activeTab === 'active'
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                ? "bg-card text-foreground border border-border/60 border-b-card -mb-px shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
             )}
           >
             <Layers className="w-4 h-4" />
-            Active Workflow Execution
+            <span>Active Workflow Execution</span>
             <span className={cn(
               "px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums",
               activeTab === 'active'
-                ? "bg-primary/15 text-primary"
+                ? "bg-accent/15 text-accent"
                 : "bg-secondary text-muted-foreground"
             )}>
-              {tasks.length}
+              {activeWorkflows.length}
             </span>
           </button>
         </div>
@@ -393,7 +360,6 @@ const OrchestratorAIPage: React.FC = () => {
         {/* Tab Content: Accounts Awaiting Activation */}
         {activeTab === 'awaiting' && (
           <section className="space-y-4">
-            {/* Awaiting Accounts Table */}
             <div className="rounded-xl border border-border/60 overflow-hidden bg-card/30">
               {/* Header */}
               <div className="grid grid-cols-[minmax(200px,2fr)_minmax(140px,1fr)_minmax(100px,1fr)_minmax(100px,1fr)_minmax(120px,1fr)_minmax(180px,auto)] gap-6 px-6 py-3 bg-secondary/40 border-b border-border/40 text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -420,7 +386,7 @@ const OrchestratorAIPage: React.FC = () => {
 
                   <div className="text-sm">
                     <span className="text-foreground">{account.segment}</span>
-                    <span className="text-muted-foreground"> / {account.arr}</span>
+                    <span className="text-muted-foreground"> · {account.arr}</span>
                   </div>
 
                   <div>
@@ -444,7 +410,7 @@ const OrchestratorAIPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-stage-onboarding/15 text-[hsl(var(--stage-onboarding))]">
+                    <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                       {account.suggestedStage}
                     </span>
                   </div>
@@ -456,9 +422,6 @@ const OrchestratorAIPage: React.FC = () => {
                     >
                       Assign Playbook
                     </button>
-                    <button className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
               ))}
@@ -468,203 +431,174 @@ const OrchestratorAIPage: React.FC = () => {
 
         {/* Tab Content: Active Workflow Execution */}
         {activeTab === 'active' && (
-          <section className="space-y-4">
-            {/* Filters */}
-            <div className="flex items-center justify-between gap-4">
-              {/* Instance Filters */}
-              <div className="flex items-center gap-1.5">
-                {instanceFilters.map((filter) => (
+          <section className="space-y-5">
+            {/* Category Filters + Search */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {categoryFilters.map((filter) => (
                   <button
                     key={filter.id}
-                    onClick={() => setActiveFilter(filter.id)}
+                    onClick={() => setCategoryFilter(filter.id)}
                     className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
-                      activeFilter === filter.id
-                        ? "bg-foreground text-background shadow-sm"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                      "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                      categoryFilter === filter.id
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-secondary/60 text-muted-foreground hover:text-foreground hover:bg-secondary"
                     )}
                   >
                     {filter.label}
                     <span className={cn(
                       "px-1.5 py-0.5 rounded text-xs tabular-nums",
-                      activeFilter === filter.id
-                        ? "bg-background/20 text-background"
-                        : "bg-secondary text-muted-foreground"
+                      categoryFilter === filter.id
+                        ? "bg-primary-foreground/20 text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
                     )}>
                       {filter.count}
                     </span>
                   </button>
                 ))}
               </div>
+
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search accounts or playbooks..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-72 rounded-lg border border-border/60 bg-card/50 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
+                />
+              </div>
             </div>
 
-            {/* Status Filters */}
-            <div className="flex items-center gap-1 pb-4 border-b border-border/40">
-              {statusFilters.map((filter) => (
-                <button
-                  key={filter.id}
-                  onClick={() => setStatusFilter(filter.id)}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-all",
-                    statusFilter === filter.id
-                      ? "bg-secondary text-foreground font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                  )}
-                >
-                  {filter.id === 'pending' && <Clock className="w-3.5 h-3.5" />}
-                  {filter.id === 'completed' && <CheckCircle2 className="w-3.5 h-3.5" />}
-                  {filter.id === 'suspended' && <Pause className="w-3.5 h-3.5" />}
-                  {filter.label}
-                  <span className="text-xs text-muted-foreground tabular-nums">({filter.count})</span>
-                </button>
-              ))}
-            </div>
+            {/* Active Workflows Table */}
+            <div className="rounded-xl border border-border/60 overflow-hidden bg-card/30">
+              {/* Header */}
+              <div className="grid grid-cols-[minmax(220px,2fr)_minmax(180px,1.5fr)_minmax(100px,0.8fr)_minmax(200px,1.5fr)_minmax(180px,1.2fr)_minmax(140px,1fr)_40px] gap-4 px-6 py-3 bg-secondary/40 border-b border-border/40 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                <span>Account</span>
+                <span>Playbook</span>
+                <span>Category</span>
+                <span>Progress</span>
+                <span>Current Phase</span>
+                <span>Status</span>
+                <span></span>
+              </div>
 
-            {/* Task Stream */}
-            <div className="space-y-1.5">
-              {filteredTasks.map((task) => {
-                const TriggerIcon = getTriggerIcon(task.trigger.type);
-                const StatusIcon = getStatusIcon(task.status);
-                const isExpanded = expandedTask === task.id;
+              {/* Rows */}
+              {filteredWorkflows.map((workflow) => {
+                const categoryConfig = getCategoryConfig(workflow.category);
+                const statusConfig = getStatusConfig(workflow.status);
+                const StatusIcon = statusConfig.icon;
 
                 return (
-                  <div 
-                    key={task.id}
-                    className={cn(
-                      "group rounded-xl border transition-all duration-200",
-                      task.status === 'suspended' 
-                        ? "border-border/30 bg-muted/30 opacity-80" 
-                        : task.status === 'completed'
-                        ? "border-accent/20 bg-accent/5"
-                        : "border-border/40 bg-card/40 hover:bg-card/70 hover:border-border/60"
-                    )}
+                  <div
+                    key={workflow.id}
+                    onClick={() => openWorkflowPanel(workflow)}
+                    className="grid grid-cols-[minmax(220px,2fr)_minmax(180px,1.5fr)_minmax(100px,0.8fr)_minmax(200px,1.5fr)_minmax(180px,1.2fr)_minmax(140px,1fr)_40px] gap-4 px-6 py-4 border-b border-border/30 last:border-b-0 items-center hover:bg-secondary/20 transition-all cursor-pointer group"
                   >
-                    {/* Task Row */}
-                    <div 
-                      className="flex items-center gap-4 px-4 py-3.5 cursor-pointer"
-                      onClick={() => setExpandedTask(isExpanded ? null : task.id)}
-                    >
-                      {/* Status Icon */}
-                      <div className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                        task.status === 'completed' ? "bg-accent/15 text-accent" :
-                        task.status === 'suspended' ? "bg-muted text-muted-foreground" :
-                        task.priority === 'high' ? "bg-warning/15 text-warning" :
-                        "bg-secondary text-muted-foreground"
-                      )}>
-                        <StatusIcon className="w-4 h-4" />
+                    {/* Account */}
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-secondary to-secondary/60 border border-border/40 flex items-center justify-center shrink-0">
+                        <Building2 className="w-5 h-5 text-muted-foreground" />
                       </div>
-
-                      {/* Account */}
-                      <div className="w-44 shrink-0">
-                        <p className="text-sm font-medium truncate">{task.account}</p>
-                        <p className="text-xs text-muted-foreground">{task.journeyPhase}</p>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{workflow.account.name}</p>
+                        <p className="text-xs text-muted-foreground">{workflow.account.segment} · {workflow.account.arr}</p>
                       </div>
-
-                      {/* Task */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground truncate">{task.currentTask}</p>
-                      </div>
-
-                      {/* Trigger */}
-                      <div className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border shrink-0",
-                        getTriggerColor(task.trigger.type)
-                      )}>
-                        <TriggerIcon className="w-3.5 h-3.5" />
-                        {task.trigger.label}
-                      </div>
-
-                      {/* Due */}
-                      <div className={cn(
-                        "flex items-center gap-1.5 text-xs shrink-0 w-24",
-                        getDueColor(task.dueContext)
-                      )}>
-                        <Calendar className="w-3.5 h-3.5" />
-                        {task.dueContext === 'today' ? 'Today' : 
-                         task.dueContext === 'overdue' ? task.dueDate : 
-                         task.dueDate}
-                      </div>
-
-                      {/* Expand */}
-                      <ChevronDown className={cn(
-                        "w-4 h-4 text-muted-foreground transition-transform",
-                        isExpanded && "rotate-180"
-                      )} />
                     </div>
 
-                    {/* Expanded Details */}
-                    {isExpanded && (
-                      <div className="px-4 pb-4 pt-0 space-y-3 border-t border-border/30 mt-0">
-                        <div className="flex items-center gap-3 pt-3">
-                          {task.playbook && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openWorkflowPanel(task);
-                              }}
-                              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-border/60 text-foreground hover:bg-secondary/60 transition-all"
-                            >
-                              <Settings2 className="w-4 h-4" />
-                              View Playbook
-                              <ArrowUpRight className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                          <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all">
-                            Mark Complete
-                          </button>
-                          <button className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all">
-                            Defer
-                          </button>
-                        </div>
+                    {/* Playbook */}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{workflow.playbook.name}</p>
+                      <p className="text-xs text-muted-foreground">{workflow.playbook.lastActivity}</p>
+                    </div>
+
+                    {/* Category Badge */}
+                    <div>
+                      <span className={cn(
+                        "inline-flex px-2.5 py-1 rounded-full text-xs font-medium border",
+                        categoryConfig.bgClass,
+                        categoryConfig.textClass,
+                        categoryConfig.borderClass
+                      )}>
+                        {categoryConfig.label}
+                      </span>
+                    </div>
+
+                    {/* Progress */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Phase {workflow.progress.currentPhase} of {workflow.progress.totalPhases}</span>
+                        <span className="font-semibold text-foreground">{workflow.progress.percentage}%</span>
                       </div>
-                    )}
+                      <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                        <div 
+                          className={cn("h-full rounded-full transition-all", categoryConfig.progressClass)}
+                          style={{ width: `${workflow.progress.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Current Phase */}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{workflow.currentPhaseName}</p>
+                      <p className="text-xs text-muted-foreground">{workflow.phaseTimeline}</p>
+                    </div>
+
+                    {/* Status */}
+                    <div>
+                      <span className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border",
+                        statusConfig.bgClass,
+                        statusConfig.textClass,
+                        statusConfig.borderClass
+                      )}>
+                        <StatusIcon className="w-3.5 h-3.5" />
+                        {workflow.status === 'attention' ? 'Attention' : statusConfig.label}
+                      </span>
+                    </div>
+
+                    {/* Arrow */}
+                    <div className="flex items-center justify-center">
+                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                    </div>
                   </div>
                 );
               })}
             </div>
           </section>
         )}
-
-        {/* Section 3: Larry's System Awareness */}
-        <section className="max-w-2xl">
-          <LarrySystemAwareness 
-            onAction={(promptId, action) => {
-              console.log('Action triggered:', promptId, action);
-            }} 
-          />
-        </section>
       </div>
 
-      {/* Dialogs & Panels */}
-      <AccountImportDialog 
-        isOpen={importDialogOpen} 
-        onClose={() => setImportDialogOpen(false)} 
+      {/* Workflow Visualization Panel */}
+      {selectedWorkflow && (
+        <WorkflowVisualizationPanel
+          isOpen={workflowPanelOpen}
+          onClose={() => setWorkflowPanelOpen(false)}
+          accountName={selectedWorkflow.account.name}
+          playbookName={selectedWorkflow.playbook.name}
+          currentPhase={selectedWorkflow.currentPhaseName}
+          workflowData={{ phases: [] }}
+        />
+      )}
+
+      {/* Account Import Dialog */}
+      <AccountImportDialog
+        isOpen={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
       />
 
-      <AssignPlaybookPanel
-        isOpen={assignPanelOpen}
-        onClose={() => {
-          setAssignPanelOpen(false);
-          setSelectedAwaitingAccount(null);
-        }}
-        accountName={selectedAwaitingAccount?.name || ''}
-        segment={selectedAwaitingAccount?.segment || ''}
-        arr={selectedAwaitingAccount?.arr || ''}
-        onAssign={handleAssignPlaybook}
-      />
-
-      <WorkflowVisualizationPanel
-        isOpen={workflowPanelOpen}
-        onClose={() => {
-          setWorkflowPanelOpen(false);
-          setSelectedAccount(null);
-        }}
-        accountName={selectedAccount?.account || ''}
-        playbookName={selectedAccount?.playbook || 'Workflow'}
-        currentPhase={selectedAccount?.journeyPhase || ''}
-        workflowData={{ phases: sampleWorkflowPhases as any }}
-      />
+      {/* Assign Playbook Panel */}
+      {selectedAwaitingAccount && (
+        <AssignPlaybookPanel
+          isOpen={assignPanelOpen}
+          onClose={() => setAssignPanelOpen(false)}
+          accountName={selectedAwaitingAccount.name}
+          segment={selectedAwaitingAccount.segment}
+          arr={selectedAwaitingAccount.arr}
+          onAssign={handleAssignPlaybook}
+        />
+      )}
     </div>
   );
 };
