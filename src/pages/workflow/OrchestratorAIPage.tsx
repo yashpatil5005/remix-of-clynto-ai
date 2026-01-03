@@ -2,9 +2,6 @@ import React, { useState } from 'react';
 import { 
   Plus,
   Clock,
-  CheckCircle2,
-  Pause,
-  Play,
   Building2,
   ChevronRight,
   ChevronDown,
@@ -15,17 +12,11 @@ import {
   TrendingDown,
   Shuffle,
   Zap,
-  RefreshCw,
   ArrowRight,
-  MoreHorizontal,
   Target,
-  Calendar,
-  Users,
   Activity,
   Eye,
-  Settings,
   Filter,
-  RotateCcw,
   Upload,
   FileUp,
   UserPlus
@@ -35,6 +26,8 @@ import { toast } from '@/hooks/use-toast';
 import WorkflowVisualizationPanel from '@/components/workflow/WorkflowVisualizationPanel';
 import AccountImportDialog from '@/components/orchestrator/AccountImportDialog';
 import AssignPlaybookPanel from '@/components/orchestrator/AssignPlaybookPanel';
+import PlaybookPreviewDialog from '@/components/orchestrator/PlaybookPreviewDialog';
+import CustomerJourneyView from '@/components/orchestrator/CustomerJourneyView';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,32 +39,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 // Types
-interface SubTask {
-  id: string;
-  name: string;
-  completed: boolean;
-  attributeUpdate?: string;
-}
-
-interface Task {
-  id: string;
-  name: string;
-  description: string;
-  endGoal: string;
-  attributesToUpdate: string[];
-  expectations: string;
-  subTasks: SubTask[];
-  completed: boolean;
-}
-
-interface Phase {
-  id: string;
-  name: string;
-  timeline: string;
-  tasks: Task[];
-  expanded?: boolean;
-}
-
 interface ActiveWorkflow {
   id: string;
   account: {
@@ -93,9 +60,6 @@ interface ActiveWorkflow {
   currentPhaseName: string;
   phaseTimeline: string;
   status: 'running' | 'attention' | 'paused' | 'completed';
-  workflowData?: {
-    phases: Phase[];
-  };
 }
 
 interface AwaitingAccount {
@@ -118,51 +82,33 @@ interface SystemPrompt {
   priority: 'high' | 'medium' | 'low';
 }
 
+interface Playbook {
+  id: string;
+  name: string;
+  matchScore: number;
+  phases: number;
+  avgDuration: string;
+  category: 'onboarding' | 'at_risk' | 'renewal' | 'expansion';
+}
+
 const OrchestratorAIPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'awaiting' | 'active'>('active');
-  const [categoryFilter, setCategoryFilter] = useState('all');
   const [workflowPanelOpen, setWorkflowPanelOpen] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] = useState<ActiveWorkflow | null>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [assignPanelOpen, setAssignPanelOpen] = useState(false);
   const [selectedAwaitingAccount, setSelectedAwaitingAccount] = useState<AwaitingAccount | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [expandedWorkflow, setExpandedWorkflow] = useState<string | null>(null);
   const [showSystemAwareness, setShowSystemAwareness] = useState(true);
+  const [previewPlaybook, setPreviewPlaybook] = useState<Playbook | null>(null);
+  const [previewAccount, setPreviewAccount] = useState<AwaitingAccount | null>(null);
+  const [awaitingSearch, setAwaitingSearch] = useState('');
 
-  // System awareness prompts (Larry's intelligence)
+  // System awareness prompts
   const systemPrompts: SystemPrompt[] = [
-    {
-      id: 'prompt-1',
-      type: 'activation',
-      message: '5 accounts are awaiting activation.',
-      action: 'Review Accounts',
-      priority: 'high',
-    },
-    {
-      id: 'prompt-2',
-      type: 'stalled',
-      message: 'Onboarding workflow appears stalled at Integrations phase.',
-      accountName: 'Axiom Corp',
-      action: 'View Workflow',
-      priority: 'high',
-    },
-    {
-      id: 'prompt-3',
-      type: 'misaligned',
-      message: 'Account matches a different lifecycle playbook.',
-      accountName: 'Pinnacle Tech',
-      action: 'Review Match',
-      priority: 'medium',
-    },
-    {
-      id: 'prompt-4',
-      type: 'opportunity',
-      message: 'Usage growth of 45% detected. Expansion opportunity identified.',
-      accountName: 'Summit Industries',
-      action: 'View Signal',
-      priority: 'medium',
-    },
+    { id: 'prompt-1', type: 'activation', message: '5 accounts are awaiting activation.', action: 'Review Accounts', priority: 'high' },
+    { id: 'prompt-2', type: 'stalled', message: 'Onboarding workflow appears stalled at Integrations phase.', accountName: 'Axiom Corp', action: 'View Workflow', priority: 'high' },
+    { id: 'prompt-3', type: 'misaligned', message: 'Account matches a different lifecycle playbook.', accountName: 'Pinnacle Tech', action: 'Review Match', priority: 'medium' },
+    { id: 'prompt-4', type: 'opportunity', message: 'Usage growth of 45% detected. Expansion opportunity identified.', accountName: 'Summit Industries', action: 'View Signal', priority: 'medium' },
   ];
 
   // Accounts awaiting activation
@@ -174,151 +120,26 @@ const OrchestratorAIPage: React.FC = () => {
     { id: 'aw-5', name: 'Nova Systems', segment: 'Mid-Market', arr: '$85,000', source: 'CRM', daysSinceCreation: 4, suggestedStage: 'Onboarding', healthScore: 88 },
   ];
 
-  const categoryFilters = [
-    { id: 'all', label: 'All Workflows', count: 24 },
-    { id: 'onboarding', label: 'Onboarding', count: 8 },
-    { id: 'at_risk', label: 'At Risk', count: 4 },
-    { id: 'renewal', label: 'Renewal', count: 7 },
-    { id: 'expansion', label: 'Expansion', count: 5 },
+  // Available playbooks for compact cards
+  const availablePlaybooks: Playbook[] = [
+    { id: 'enterprise-onboarding', name: 'Enterprise Onboarding', matchScore: 94, phases: 7, avgDuration: '45 days', category: 'onboarding' },
+    { id: 'standard-onboarding', name: 'Standard Onboarding', matchScore: 72, phases: 5, avgDuration: '30 days', category: 'onboarding' },
+    { id: 'tech-fast-track', name: 'Tech Fast-Track', matchScore: 68, phases: 4, avgDuration: '21 days', category: 'onboarding' },
+    { id: 'white-glove', name: 'White Glove Premium', matchScore: 88, phases: 8, avgDuration: '60 days', category: 'onboarding' },
+    { id: 'risk-mitigation', name: 'Risk Mitigation', matchScore: 85, phases: 4, avgDuration: '30 days', category: 'at_risk' },
+    { id: 'renewal-90', name: 'Renewal 90-Day', matchScore: 90, phases: 6, avgDuration: '90 days', category: 'renewal' },
+    { id: 'expansion-discovery', name: 'Expansion Discovery', matchScore: 82, phases: 5, avgDuration: '45 days', category: 'expansion' },
   ];
 
   // Active workflows data
   const activeWorkflows: ActiveWorkflow[] = [
-    {
-      id: '1',
-      account: { name: 'Meridian Technologies', segment: 'Enterprise', arr: '$420,000', healthScore: 87 },
-      playbook: { name: 'Enterprise Onboarding', lastActivity: '2 hours ago' },
-      category: 'onboarding',
-      progress: { currentPhase: 2, totalPhases: 6, percentage: 35 },
-      currentPhaseName: 'Kickoff & Alignment',
-      phaseTimeline: '3d in phase',
-      status: 'running',
-    },
-    {
-      id: '2',
-      account: { name: 'Axiom Corp', segment: 'Enterprise', arr: '$280,000', healthScore: 54 },
-      playbook: { name: 'Risk Mitigation', lastActivity: '1 day ago' },
-      category: 'at_risk',
-      progress: { currentPhase: 1, totalPhases: 4, percentage: 20 },
-      currentPhaseName: 'Assessment',
-      phaseTimeline: '5d in phase',
-      status: 'attention',
-    },
-    {
-      id: '3',
-      account: { name: 'Summit Industries', segment: 'Mid-Market', arr: '$145,000', healthScore: 91 },
-      playbook: { name: 'Expansion Discovery', lastActivity: '4 hours ago' },
-      category: 'expansion',
-      progress: { currentPhase: 3, totalPhases: 5, percentage: 60 },
-      currentPhaseName: 'Value Mapping',
-      phaseTimeline: '2d in phase',
-      status: 'running',
-    },
-    {
-      id: '4',
-      account: { name: 'Pinnacle Tech', segment: 'Enterprise', arr: '$380,000', healthScore: 76 },
-      playbook: { name: 'Renewal 90-Day', lastActivity: '6 hours ago' },
-      category: 'renewal',
-      progress: { currentPhase: 3, totalPhases: 6, percentage: 45 },
-      currentPhaseName: 'Stakeholder Alignment',
-      phaseTimeline: '4d in phase',
-      status: 'running',
-    },
-    {
-      id: '5',
-      account: { name: 'Vertex Solutions', segment: 'Mid-Market', arr: '$195,000', healthScore: 83 },
-      playbook: { name: 'Enterprise Onboarding', lastActivity: '1 hour ago' },
-      category: 'onboarding',
-      progress: { currentPhase: 4, totalPhases: 6, percentage: 70 },
-      currentPhaseName: 'Configuration',
-      phaseTimeline: '1d in phase',
-      status: 'running',
-    },
-    {
-      id: '6',
-      account: { name: 'Nexus Global', segment: 'Enterprise', arr: '$520,000', healthScore: 94 },
-      playbook: { name: 'Renewal 90-Day', lastActivity: '3 hours ago' },
-      category: 'renewal',
-      progress: { currentPhase: 5, totalPhases: 6, percentage: 85 },
-      currentPhaseName: 'Contract Review',
-      phaseTimeline: '2d in phase',
-      status: 'running',
-    },
+    { id: '1', account: { name: 'Meridian Technologies', segment: 'Enterprise', arr: '$420,000', healthScore: 87 }, playbook: { name: 'Enterprise Onboarding', lastActivity: '2 hours ago' }, category: 'onboarding', progress: { currentPhase: 2, totalPhases: 6, percentage: 35 }, currentPhaseName: 'Kickoff & Alignment', phaseTimeline: '3d in phase', status: 'running' },
+    { id: '2', account: { name: 'Axiom Corp', segment: 'Enterprise', arr: '$280,000', healthScore: 54 }, playbook: { name: 'Risk Mitigation', lastActivity: '1 day ago' }, category: 'at_risk', progress: { currentPhase: 1, totalPhases: 4, percentage: 20 }, currentPhaseName: 'Assessment', phaseTimeline: '5d in phase', status: 'attention' },
+    { id: '3', account: { name: 'Summit Industries', segment: 'Mid-Market', arr: '$145,000', healthScore: 91 }, playbook: { name: 'Expansion Discovery', lastActivity: '4 hours ago' }, category: 'expansion', progress: { currentPhase: 3, totalPhases: 5, percentage: 60 }, currentPhaseName: 'Value Mapping', phaseTimeline: '2d in phase', status: 'running' },
+    { id: '4', account: { name: 'Pinnacle Tech', segment: 'Enterprise', arr: '$380,000', healthScore: 76 }, playbook: { name: 'Renewal 90-Day', lastActivity: '6 hours ago' }, category: 'renewal', progress: { currentPhase: 3, totalPhases: 6, percentage: 45 }, currentPhaseName: 'Stakeholder Alignment', phaseTimeline: '4d in phase', status: 'running' },
+    { id: '5', account: { name: 'Vertex Solutions', segment: 'Mid-Market', arr: '$195,000', healthScore: 83 }, playbook: { name: 'Enterprise Onboarding', lastActivity: '1 hour ago' }, category: 'onboarding', progress: { currentPhase: 4, totalPhases: 6, percentage: 70 }, currentPhaseName: 'Configuration', phaseTimeline: '1d in phase', status: 'running' },
+    { id: '6', account: { name: 'Nexus Global', segment: 'Enterprise', arr: '$520,000', healthScore: 94 }, playbook: { name: 'Renewal 90-Day', lastActivity: '3 hours ago' }, category: 'renewal', progress: { currentPhase: 5, totalPhases: 6, percentage: 85 }, currentPhaseName: 'Contract Review', phaseTimeline: '2d in phase', status: 'running' },
   ];
-
-  const getCategoryConfig = (category: ActiveWorkflow['category']) => {
-    switch (category) {
-      case 'onboarding':
-        return { 
-          label: 'Onboarding', 
-          bgClass: 'bg-primary/10', 
-          textClass: 'text-primary',
-          borderClass: 'border-primary/20',
-          progressClass: 'bg-primary'
-        };
-      case 'at_risk':
-        return { 
-          label: 'At Risk', 
-          bgClass: 'bg-destructive/10', 
-          textClass: 'text-destructive',
-          borderClass: 'border-destructive/20',
-          progressClass: 'bg-destructive'
-        };
-      case 'renewal':
-        return { 
-          label: 'Renewal', 
-          bgClass: 'bg-warning/10', 
-          textClass: 'text-warning',
-          borderClass: 'border-warning/20',
-          progressClass: 'bg-warning'
-        };
-      case 'expansion':
-        return { 
-          label: 'Expansion', 
-          bgClass: 'bg-accent/10', 
-          textClass: 'text-accent',
-          borderClass: 'border-accent/20',
-          progressClass: 'bg-accent'
-        };
-    }
-  };
-
-  const getStatusConfig = (status: ActiveWorkflow['status']) => {
-    switch (status) {
-      case 'running':
-        return { 
-          label: 'Running', 
-          icon: Play, 
-          bgClass: 'bg-accent/10', 
-          textClass: 'text-accent',
-          borderClass: 'border-accent/30'
-        };
-      case 'attention':
-        return { 
-          label: 'Attention Required', 
-          icon: AlertCircle, 
-          bgClass: 'bg-destructive/10', 
-          textClass: 'text-destructive',
-          borderClass: 'border-destructive/30'
-        };
-      case 'paused':
-        return { 
-          label: 'Paused', 
-          icon: Pause, 
-          bgClass: 'bg-muted', 
-          textClass: 'text-muted-foreground',
-          borderClass: 'border-border'
-        };
-      case 'completed':
-        return { 
-          label: 'Completed', 
-          icon: CheckCircle2, 
-          bgClass: 'bg-accent/10', 
-          textClass: 'text-accent',
-          borderClass: 'border-accent/30'
-        };
-    }
-  };
 
   const getPromptIcon = (type: SystemPrompt['type']) => {
     switch (type) {
@@ -340,12 +161,9 @@ const OrchestratorAIPage: React.FC = () => {
     }
   };
 
-  const filteredWorkflows = activeWorkflows.filter(workflow => {
-    const matchesCategory = categoryFilter === 'all' || workflow.category === categoryFilter;
-    const matchesSearch = workflow.account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          workflow.playbook.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const filteredAwaitingAccounts = awaitingAccounts.filter(account =>
+    account.name.toLowerCase().includes(awaitingSearch.toLowerCase())
+  );
 
   const openWorkflowPanel = (workflow: ActiveWorkflow) => {
     setSelectedWorkflow(workflow);
@@ -360,10 +178,12 @@ const OrchestratorAIPage: React.FC = () => {
   const handleAssignPlaybook = (playbookId: string) => {
     toast({
       title: "Playbook Assigned",
-      description: `Successfully assigned playbook to ${selectedAwaitingAccount?.name}`,
+      description: `Successfully assigned playbook to ${selectedAwaitingAccount?.name || previewAccount?.name}`,
     });
     setAssignPanelOpen(false);
     setSelectedAwaitingAccount(null);
+    setPreviewPlaybook(null);
+    setPreviewAccount(null);
   };
 
   const handleSystemPromptAction = (promptId: string, action: string) => {
@@ -373,32 +193,31 @@ const OrchestratorAIPage: React.FC = () => {
       const workflow = activeWorkflows.find(w => w.status === 'attention');
       if (workflow) openWorkflowPanel(workflow);
     }
-    toast({
-      title: "Action Initiated",
-      description: `${action} has been triggered.`,
-    });
+    toast({ title: "Action Initiated", description: `${action} has been triggered.` });
   };
 
   const handleWorkflowAction = (workflowId: string, action: string) => {
-    toast({
-      title: `Workflow ${action}`,
-      description: `Workflow has been ${action.toLowerCase()}ed successfully.`,
-    });
+    toast({ title: `Workflow ${action}`, description: `Workflow has been ${action.toLowerCase()}ed successfully.` });
   };
 
   const handleViewAccount = (accountName: string) => {
-    toast({
-      title: "Navigating to Account",
-      description: `Opening ${accountName} details...`,
-    });
+    toast({ title: "Navigating to Account", description: `Opening ${accountName} details...` });
   };
 
   const handleBulkAction = () => {
-    toast({
-      title: "Bulk Import",
-      description: "Opening bulk import dialog...",
-    });
     setImportDialogOpen(true);
+  };
+
+  const handlePreviewPlaybook = (playbook: Playbook, account: AwaitingAccount) => {
+    setPreviewPlaybook(playbook);
+    setPreviewAccount(account);
+  };
+
+  const handleQuickAssign = (playbook: Playbook, account: AwaitingAccount) => {
+    toast({
+      title: "Playbook Assigned",
+      description: `${playbook.name} assigned to ${account.name}`,
+    });
   };
 
   return (
@@ -410,13 +229,9 @@ const OrchestratorAIPage: React.FC = () => {
             <div className="space-y-1.5">
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-semibold tracking-tight">Orchestrator</h1>
-                <Badge variant="outline" className="bg-accent/10 text-accent border-accent/20 font-medium">
-                  Live
-                </Badge>
+                <Badge variant="outline" className="bg-accent/10 text-accent border-accent/20 font-medium">Live</Badge>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Lifecycle assignment and workflow execution engine
-              </p>
+              <p className="text-sm text-muted-foreground">Lifecycle assignment and workflow execution engine</p>
             </div>
 
             {/* System Metrics */}
@@ -438,13 +253,10 @@ const OrchestratorAIPage: React.FC = () => {
                 <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-card/80 border border-border/50">
                   <span className="w-2.5 h-2.5 rounded-full bg-destructive" />
                   <span className="text-muted-foreground">Attention</span>
-                  <span className="font-semibold text-foreground tabular-nums">
-                    {activeWorkflows.filter(w => w.status === 'attention').length}
-                  </span>
+                  <span className="font-semibold text-foreground tabular-nums">{activeWorkflows.filter(w => w.status === 'attention').length}</span>
                 </div>
               </div>
 
-              {/* Primary Actions */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button className="gap-2 shadow-sm">
@@ -494,14 +306,7 @@ const OrchestratorAIPage: React.FC = () => {
                 const style = getPromptStyle(prompt.type);
                 
                 return (
-                  <div
-                    key={prompt.id}
-                    className={cn(
-                      "flex items-center gap-3 px-4 py-2.5 rounded-xl border shrink-0 transition-all hover:shadow-sm",
-                      style.bg,
-                      style.border
-                    )}
-                  >
+                  <div key={prompt.id} className={cn("flex items-center gap-3 px-4 py-2.5 rounded-xl border shrink-0 transition-all hover:shadow-sm", style.bg, style.border)}>
                     <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", style.icon)}>
                       <Icon className="w-3.5 h-3.5" />
                     </div>
@@ -509,10 +314,7 @@ const OrchestratorAIPage: React.FC = () => {
                       {prompt.accountName && <span className="font-medium">{prompt.accountName}: </span>}
                       {prompt.message}
                     </p>
-                    <button
-                      onClick={() => handleSystemPromptAction(prompt.id, prompt.action)}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-primary hover:bg-primary/10 transition-all shrink-0"
-                    >
+                    <button onClick={() => handleSystemPromptAction(prompt.id, prompt.action)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-primary hover:bg-primary/10 transition-all shrink-0">
                       {prompt.action}
                       <ArrowRight className="w-3 h-3" />
                     </button>
@@ -521,10 +323,7 @@ const OrchestratorAIPage: React.FC = () => {
               })}
             </div>
 
-            <button
-              onClick={() => setShowSystemAwareness(false)}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all shrink-0"
-            >
+            <button onClick={() => setShowSystemAwareness(false)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all shrink-0">
               <ChevronDown className="w-4 h-4" />
             </button>
           </div>
@@ -534,10 +333,7 @@ const OrchestratorAIPage: React.FC = () => {
       {/* Collapsed System Awareness Toggle */}
       {!showSystemAwareness && (
         <div className="px-8 py-2 border-b border-border/40">
-          <button
-            onClick={() => setShowSystemAwareness(true)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-all"
-          >
+          <button onClick={() => setShowSystemAwareness(true)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-all">
             <Sparkles className="w-4 h-4 text-primary" />
             <span>{systemPrompts.length} system insights available</span>
             <ChevronRight className="w-4 h-4" />
@@ -559,12 +355,7 @@ const OrchestratorAIPage: React.FC = () => {
           >
             <Clock className="w-4 h-4" />
             <span>Accounts Awaiting Activation</span>
-            <span className={cn(
-              "px-2.5 py-0.5 rounded-full text-xs font-semibold tabular-nums",
-              activeTab === 'awaiting'
-                ? "bg-warning/15 text-warning"
-                : "bg-secondary text-muted-foreground"
-            )}>
+            <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-semibold tabular-nums", activeTab === 'awaiting' ? "bg-warning/15 text-warning" : "bg-secondary text-muted-foreground")}>
               {awaitingAccounts.length}
             </span>
           </button>
@@ -579,12 +370,7 @@ const OrchestratorAIPage: React.FC = () => {
           >
             <Layers className="w-4 h-4" />
             <span>Active Workflow Execution</span>
-            <span className={cn(
-              "px-2.5 py-0.5 rounded-full text-xs font-semibold tabular-nums",
-              activeTab === 'active'
-                ? "bg-accent/15 text-accent"
-                : "bg-secondary text-muted-foreground"
-            )}>
+            <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-semibold tabular-nums", activeTab === 'active' ? "bg-accent/15 text-accent" : "bg-secondary text-muted-foreground")}>
               {activeWorkflows.length}
             </span>
           </button>
@@ -599,9 +385,7 @@ const OrchestratorAIPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">Pending Activation</h2>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Accounts ready to be assigned a lifecycle playbook
-                </p>
+                <p className="text-sm text-muted-foreground mt-0.5">Accounts ready to be assigned a lifecycle playbook</p>
               </div>
               <div className="flex items-center gap-3">
                 <div className="relative">
@@ -609,6 +393,8 @@ const OrchestratorAIPage: React.FC = () => {
                   <input
                     type="text"
                     placeholder="Search accounts..."
+                    value={awaitingSearch}
+                    onChange={(e) => setAwaitingSearch(e.target.value)}
                     className="pl-10 pr-4 py-2.5 w-64 rounded-xl border border-border/60 bg-card/50 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
                   />
                 </div>
@@ -619,104 +405,83 @@ const OrchestratorAIPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border/60 overflow-hidden bg-card/30">
-              {/* Table Header */}
-              <div className="grid grid-cols-[minmax(200px,2fr)_minmax(140px,1fr)_minmax(100px,0.8fr)_minmax(80px,0.6fr)_minmax(100px,0.8fr)_minmax(120px,1fr)_minmax(160px,auto)] gap-4 px-6 py-3.5 bg-secondary/40 border-b border-border/40 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                <span>Account</span>
-                <span>Segment / ARR</span>
-                <span>Source</span>
-                <span>Health</span>
-                <span>Waiting</span>
-                <span>Suggested Stage</span>
-                <span className="text-right">Actions</span>
-              </div>
-
-              {/* Table Rows */}
-              {awaitingAccounts.map((account, index) => (
-                <div
-                  key={account.id}
-                  className={cn(
-                    "grid grid-cols-[minmax(200px,2fr)_minmax(140px,1fr)_minmax(100px,0.8fr)_minmax(80px,0.6fr)_minmax(100px,0.8fr)_minmax(120px,1fr)_minmax(160px,auto)] gap-4 px-6 py-4 items-center transition-all hover:bg-secondary/20",
-                    index !== awaitingAccounts.length - 1 && "border-b border-border/30"
-                  )}
-                >
-                  {/* Account */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0">
-                      <Building2 className="w-5 h-5 text-primary" />
+            {/* Awaiting Accounts with Compact Playbook Cards */}
+            <div className="space-y-4">
+              {filteredAwaitingAccounts.map((account) => (
+                <div key={account.id} className="rounded-xl border border-border/60 bg-card/30 overflow-hidden">
+                  {/* Account Header */}
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-border/30">
+                    <div className="flex items-center gap-4">
+                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center">
+                        <Building2 className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-sm">{account.name}</h3>
+                        <p className="text-xs text-muted-foreground">{account.segment} · {account.arr}</p>
+                      </div>
                     </div>
-                    <span className="font-medium text-sm truncate">{account.name}</span>
-                  </div>
-
-                  {/* Segment / ARR */}
-                  <div className="text-sm">
-                    <span className="text-foreground font-medium">{account.segment}</span>
-                    <span className="text-muted-foreground"> · {account.arr}</span>
-                  </div>
-
-                  {/* Source */}
-                  <div>
-                    <Badge 
-                      variant="secondary"
-                      className={cn(
-                        "font-medium",
-                        account.source === 'CRM' ? "bg-primary/10 text-primary border-primary/20" :
-                        account.source === 'Bulk Upload' ? "bg-accent/10 text-accent border-accent/20" :
-                        "bg-secondary text-muted-foreground"
-                      )}
-                    >
-                      {account.source}
-                    </Badge>
-                  </div>
-
-                  {/* Health Score */}
-                  <div>
-                    <div className={cn(
-                      "inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-semibold tabular-nums",
-                      (account.healthScore || 0) >= 80 ? "bg-accent/10 text-accent" :
-                      (account.healthScore || 0) >= 60 ? "bg-warning/10 text-warning" :
-                      "bg-destructive/10 text-destructive"
-                    )}>
-                      <Activity className="w-3 h-3" />
-                      {account.healthScore}%
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3 text-xs">
+                        <Badge variant="secondary" className={cn("font-medium", account.source === 'CRM' ? "bg-primary/10 text-primary" : account.source === 'Bulk Upload' ? "bg-accent/10 text-accent" : "bg-secondary")}>
+                          {account.source}
+                        </Badge>
+                        <div className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg font-semibold", (account.healthScore || 0) >= 80 ? "bg-accent/10 text-accent" : (account.healthScore || 0) >= 60 ? "bg-warning/10 text-warning" : "bg-destructive/10 text-destructive")}>
+                          <Activity className="w-3 h-3" />
+                          {account.healthScore}%
+                        </div>
+                        <span className={cn("font-medium tabular-nums", account.daysSinceCreation >= 5 ? "text-destructive" : account.daysSinceCreation >= 3 ? "text-warning" : "text-muted-foreground")}>
+                          {account.daysSinceCreation}d waiting
+                        </span>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => handleViewAccount(account.name)}>
+                        <Eye className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
 
-                  {/* Days Waiting */}
-                  <div className={cn(
-                    "text-sm font-medium tabular-nums",
-                    account.daysSinceCreation >= 5 ? "text-destructive" :
-                    account.daysSinceCreation >= 3 ? "text-warning" :
-                    "text-muted-foreground"
-                  )}>
-                    {account.daysSinceCreation} {account.daysSinceCreation === 1 ? 'day' : 'days'}
-                  </div>
-
-                  {/* Suggested Stage */}
-                  <div>
-                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-medium">
-                      {account.suggestedStage}
-                    </Badge>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground hover:text-foreground"
-                      onClick={() => handleViewAccount(account.name)}
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => openAssignPanel(account)}
-                      className="gap-1.5"
-                    >
-                      <Target className="w-3.5 h-3.5" />
-                      Assign Playbook
-                    </Button>
+                  {/* Compact Playbook Cards */}
+                  <div className="px-5 py-4">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Select Playbook</p>
+                    <div className="grid grid-cols-4 xl:grid-cols-7 gap-2">
+                      {availablePlaybooks.map((playbook) => (
+                        <div
+                          key={playbook.id}
+                          className="group relative p-3 rounded-lg border border-border/50 bg-secondary/20 hover:bg-secondary/40 hover:border-border transition-all cursor-pointer"
+                        >
+                          <div className="space-y-2">
+                            <p className="text-xs font-medium leading-tight line-clamp-2">{playbook.name}</p>
+                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                              <span>{playbook.phases} phases</span>
+                              <span>·</span>
+                              <span>{playbook.avgDuration}</span>
+                            </div>
+                            <div className={cn("inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold", playbook.matchScore >= 90 ? "bg-accent/15 text-accent" : playbook.matchScore >= 70 ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground")}>
+                              {playbook.matchScore}% match
+                            </div>
+                          </div>
+                          
+                          {/* Hover Actions */}
+                          <div className="absolute inset-0 bg-background/95 rounded-lg flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button size="sm" variant="outline" className="h-7 text-xs w-full" onClick={(e) => { e.stopPropagation(); handlePreviewPlaybook(playbook, account); }}>
+                              <Eye className="w-3 h-3 mr-1" />
+                              Preview
+                            </Button>
+                            <Button size="sm" className="h-7 text-xs w-full" onClick={(e) => { e.stopPropagation(); handleQuickAssign(playbook, account); }}>
+                              <Target className="w-3 h-3 mr-1" />
+                              Assign
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Full Panel Option */}
+                    <div className="mt-3 flex justify-end">
+                      <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => openAssignPanel(account)}>
+                        View all options with AI recommendations
+                        <ChevronRight className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -724,283 +489,14 @@ const OrchestratorAIPage: React.FC = () => {
           </section>
         )}
 
-        {/* Tab Content: Active Workflow Execution */}
+        {/* Tab Content: Active Workflow Execution - Customer Journey View */}
         {activeTab === 'active' && (
-          <section className="space-y-5">
-            {/* Category Filters + Search */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {categoryFilters.map((filter) => (
-                  <button
-                    key={filter.id}
-                    onClick={() => setCategoryFilter(filter.id)}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
-                      categoryFilter === filter.id
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "bg-secondary/60 text-muted-foreground hover:text-foreground hover:bg-secondary"
-                    )}
-                  >
-                    {filter.label}
-                    <span className={cn(
-                      "px-1.5 py-0.5 rounded-md text-xs tabular-nums",
-                      categoryFilter === filter.id
-                        ? "bg-primary-foreground/20 text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    )}>
-                      {filter.count}
-                    </span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Search accounts or playbooks..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-4 py-2.5 w-72 rounded-xl border border-border/60 bg-card/50 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40"
-                  />
-                </div>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <RotateCcw className="w-4 h-4" />
-                  Refresh
-                </Button>
-              </div>
-            </div>
-
-            {/* Active Workflows List */}
-            <div className="space-y-3">
-              {filteredWorkflows.map((workflow) => {
-                const categoryConfig = getCategoryConfig(workflow.category);
-                const statusConfig = getStatusConfig(workflow.status);
-                const StatusIcon = statusConfig.icon;
-                const isExpanded = expandedWorkflow === workflow.id;
-
-                return (
-                  <div
-                    key={workflow.id}
-                    className={cn(
-                      "rounded-xl border transition-all overflow-hidden",
-                      workflow.status === 'attention' 
-                        ? "border-destructive/30 bg-destructive/[0.02]" 
-                        : "border-border/60 bg-card/30",
-                      isExpanded && "ring-1 ring-primary/20 shadow-lg"
-                    )}
-                  >
-                    {/* Main Row */}
-                    <div
-                      className="grid grid-cols-[minmax(220px,2fr)_minmax(180px,1.5fr)_minmax(100px,0.8fr)_minmax(200px,1.5fr)_minmax(180px,1.2fr)_minmax(140px,1fr)_50px] gap-4 px-6 py-4 items-center cursor-pointer group hover:bg-secondary/20 transition-all"
-                      onClick={() => setExpandedWorkflow(isExpanded ? null : workflow.id)}
-                    >
-                      {/* Account */}
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-secondary to-secondary/60 border border-border/40 flex items-center justify-center shrink-0">
-                            <Building2 className="w-5 h-5 text-muted-foreground" />
-                          </div>
-                          {workflow.status === 'attention' && (
-                            <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive flex items-center justify-center">
-                              <AlertCircle className="w-2.5 h-2.5 text-destructive-foreground" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm truncate">{workflow.account.name}</p>
-                          <p className="text-xs text-muted-foreground">{workflow.account.segment} · {workflow.account.arr}</p>
-                        </div>
-                      </div>
-
-                      {/* Playbook */}
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{workflow.playbook.name}</p>
-                        <p className="text-xs text-muted-foreground">{workflow.playbook.lastActivity}</p>
-                      </div>
-
-                      {/* Category Badge */}
-                      <div>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "font-medium",
-                            categoryConfig.bgClass,
-                            categoryConfig.textClass,
-                            categoryConfig.borderClass
-                          )}
-                        >
-                          {categoryConfig.label}
-                        </Badge>
-                      </div>
-
-                      {/* Progress */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">Phase {workflow.progress.currentPhase} of {workflow.progress.totalPhases}</span>
-                          <span className="font-semibold text-foreground tabular-nums">{workflow.progress.percentage}%</span>
-                        </div>
-                        <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                          <div 
-                            className={cn("h-full rounded-full transition-all", categoryConfig.progressClass)}
-                            style={{ width: `${workflow.progress.percentage}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Current Phase */}
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{workflow.currentPhaseName}</p>
-                        <p className="text-xs text-muted-foreground">{workflow.phaseTimeline}</p>
-                      </div>
-
-                      {/* Status */}
-                      <div>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "gap-1.5 font-medium",
-                            statusConfig.bgClass,
-                            statusConfig.textClass,
-                            statusConfig.borderClass
-                          )}
-                        >
-                          <StatusIcon className="w-3.5 h-3.5" />
-                          {workflow.status === 'attention' ? 'Attention' : statusConfig.label}
-                        </Badge>
-                      </div>
-
-                      {/* Expand/Actions */}
-                      <div className="flex items-center justify-end gap-1">
-                        <div className={cn(
-                          "text-muted-foreground transition-transform",
-                          isExpanded && "rotate-180"
-                        )}>
-                          <ChevronDown className="w-4 h-4" />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Expanded Content */}
-                    {isExpanded && (
-                      <div className="px-6 py-5 border-t border-border/40 bg-secondary/10">
-                        <div className="grid grid-cols-4 gap-6">
-                          {/* Account Health */}
-                          <div className="space-y-3">
-                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Account Health</h4>
-                            <div className="flex items-center gap-3">
-                              <div className={cn(
-                                "w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold",
-                                (workflow.account.healthScore || 0) >= 80 ? "bg-accent/10 text-accent" :
-                                (workflow.account.healthScore || 0) >= 60 ? "bg-warning/10 text-warning" :
-                                "bg-destructive/10 text-destructive"
-                              )}>
-                                {workflow.account.healthScore}
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-foreground">Health Score</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {(workflow.account.healthScore || 0) >= 80 ? 'Healthy' :
-                                   (workflow.account.healthScore || 0) >= 60 ? 'Monitor' : 'At Risk'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Phase Details */}
-                          <div className="space-y-3">
-                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Current Phase</h4>
-                            <div className="space-y-2">
-                              <p className="text-sm font-medium text-foreground">{workflow.currentPhaseName}</p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Calendar className="w-3.5 h-3.5" />
-                                <span>{workflow.phaseTimeline}</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <Users className="w-3.5 h-3.5" />
-                                <span>3 tasks remaining</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Recent Activity */}
-                          <div className="space-y-3">
-                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recent Activity</h4>
-                            <div className="space-y-2">
-                              <p className="text-sm text-foreground">Last touch: {workflow.playbook.lastActivity}</p>
-                              <p className="text-xs text-muted-foreground">Email sent to stakeholder</p>
-                            </div>
-                          </div>
-
-                          {/* Actions */}
-                          <div className="space-y-3">
-                            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</h4>
-                            <div className="flex flex-wrap gap-2">
-                              <Button
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openWorkflowPanel(workflow);
-                                }}
-                                className="gap-1.5"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                                View Workflow
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleWorkflowAction(workflow.id, 'Pause');
-                                }}
-                                className="gap-1.5"
-                              >
-                                <Pause className="w-3.5 h-3.5" />
-                                Pause
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="outline" size="sm">
-                                    <MoreHorizontal className="w-4 h-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem 
-                                    onClick={() => handleViewAccount(workflow.account.name)}
-                                    className="gap-2 cursor-pointer"
-                                  >
-                                    <Building2 className="w-4 h-4" />
-                                    View Account
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => handleWorkflowAction(workflow.id, 'Reassign')}
-                                    className="gap-2 cursor-pointer"
-                                  >
-                                    <Settings className="w-4 h-4" />
-                                    Change Playbook
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem 
-                                    onClick={() => handleWorkflowAction(workflow.id, 'Cancel')}
-                                    className="gap-2 cursor-pointer text-destructive"
-                                  >
-                                    <AlertCircle className="w-4 h-4" />
-                                    Cancel Workflow
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+          <CustomerJourneyView
+            workflows={activeWorkflows}
+            onOpenWorkflow={openWorkflowPanel}
+            onWorkflowAction={handleWorkflowAction}
+            onViewAccount={handleViewAccount}
+          />
         )}
       </div>
 
@@ -1017,10 +513,7 @@ const OrchestratorAIPage: React.FC = () => {
       )}
 
       {/* Account Import Dialog */}
-      <AccountImportDialog
-        isOpen={importDialogOpen}
-        onClose={() => setImportDialogOpen(false)}
-      />
+      <AccountImportDialog isOpen={importDialogOpen} onClose={() => setImportDialogOpen(false)} />
 
       {/* Assign Playbook Panel */}
       {selectedAwaitingAccount && (
@@ -1031,6 +524,16 @@ const OrchestratorAIPage: React.FC = () => {
           segment={selectedAwaitingAccount.segment}
           arr={selectedAwaitingAccount.arr}
           onAssign={handleAssignPlaybook}
+        />
+      )}
+
+      {/* Playbook Preview Dialog */}
+      {previewPlaybook && previewAccount && (
+        <PlaybookPreviewDialog
+          isOpen={!!previewPlaybook}
+          onClose={() => { setPreviewPlaybook(null); setPreviewAccount(null); }}
+          playbook={previewPlaybook}
+          onAssign={() => handleAssignPlaybook(previewPlaybook.id)}
         />
       )}
     </div>
